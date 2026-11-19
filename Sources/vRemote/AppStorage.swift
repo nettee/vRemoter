@@ -4,7 +4,7 @@ enum AppStorage {
     static var chromecastVoiceMode: ChromecastVoiceMode {
         get {
             guard let raw = UserDefaults.standard.string(forKey: "chromecastVoiceMode") else {
-                return .holdToTalk
+                return .hybrid
             }
             guard let mode = ChromecastVoiceMode(rawValue: raw) else {
                 preconditionFailure("Invalid chromecastVoiceMode: \(raw)")
@@ -16,7 +16,7 @@ enum AppStorage {
     static var voiceInputTool: VoiceInputTool {
         get {
             guard let raw = UserDefaults.standard.string(forKey: "voiceInputTool") else {
-                return .doubao
+                return .typeless
             }
             guard let tool = VoiceInputTool(rawValue: raw) else {
                 preconditionFailure("Invalid voiceInputTool: \(raw)")
@@ -57,7 +57,7 @@ enum AppStorage {
             recordingEnabledKey: false,
             macInputEnabledKey: true,
             remoteInputEnabledKey: true,
-            inputTriggerKeyKey: InputTriggerKey.option.rawValue,
+            inputTriggerKeyKey: InputTriggerKey.function.rawValue,
         ])
         ensureDirectory(logsDirectory)
         ensureDirectory(applicationSupportDirectory)
@@ -89,7 +89,7 @@ enum AppStorage {
     static var inputTriggerKey: InputTriggerKey {
         get {
             let raw = UserDefaults.standard.string(forKey: inputTriggerKeyKey)
-            return InputTriggerKey(rawValue: raw ?? "") ?? .option
+            return InputTriggerKey(rawValue: raw ?? "") ?? .function
         }
         set {
             UserDefaults.standard.set(newValue.rawValue, forKey: inputTriggerKeyKey)

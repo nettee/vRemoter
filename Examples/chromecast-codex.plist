@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>chromecastVoiceMode</key>
+	<string>hybrid</string>
+	<key>inputTriggerKey</key>
+	<string>function</string>
+	<key>macInputEnabled</key>
+	<true/>
+	<key>remoteInputEnabled</key>
+	<true/>
+	<key>remoteMapping.chromecast.01</key>
+	<string>disabled</string>
+	<key>remoteMapping.chromecast.03</key>
+	<string>arrowUp</string>
+	<key>remoteMapping.chromecast.04</key>
+	<string>arrowDown</string>
+	<key>remoteMapping.chromecast.05</key>
+	<string>arrowLeft</string>
+	<key>remoteMapping.chromecast.06</key>
+	<string>arrowRight</string>
+	<key>remoteMapping.chromecast.07</key>
+	<string>returnKey</string>
+	<key>remoteMapping.chromecast.08</key>
+	<string>mute</string>
+	<key>remoteMapping.chromecast.0A</key>
+	<string>appSwitcher</string>
+	<key>remoteMapping.chromecast.0B</key>
+	<string>escape</string>
+	<key>remoteMapping.chromecast.0C</key>
+	<string>volumeUp</string>
+	<key>remoteMapping.chromecast.0D</key>
+	<string>volumeDown</string>
+	<key>remoteMapping.chromecast.0E</key>
+	<string>tab</string>
+	<key>remoteMapping.chromecast.0F</key>
+	<string>deleteBackward</string>
+	<key>remoteMapping.chromecast.11</key>
+	<string>commandV</string>
+	<key>remoteMappingEnabled.chromecast</key>
+	<true/>
+	<key>voiceInputTool</key>
+	<string>typeless</string>
+</dict>
+</plist>

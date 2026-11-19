@@ -548,7 +548,7 @@ final class X6SessionCoordinator {
         sessionRemote = nil
         activateRemoteRoute()
         scheduleStartVerification(for: generation)
-        publish("豆包正在启动 · 等待遥控器")
+        publish("语音输入已触发 · 等待遥控器")
     }
 
     private func beginOpening(
@@ -576,8 +576,8 @@ final class X6SessionCoordinator {
         scheduleStartVerification(for: generation)
         publish(
             owner == .keyboard
-                ? "豆包正在启动 · 遥控器已预热"
-                : "遥控器已启动 · 正在打开豆包"
+                ? "语音输入已触发 · 遥控器已预热"
+                : "遥控器已启动 · 语音输入已触发"
         )
     }
 
@@ -621,7 +621,7 @@ final class X6SessionCoordinator {
                 self.publish("Typeless 已结束")
             }
         }
-        publish("遥控器已结束 · 正在关闭豆包")
+        publish("遥控器已结束 · 正在结束语音输入")
         print(
             "[VOICE-SESSION] begin closing reason=\(reason) " +
             "trigger=\(sendTrigger ? "synthetic" : "physical")"

@@ -1,147 +1,74 @@
-# vRemoter · Chromecast + Typeless edition
+# vRemoter · Chromecast + Typeless
 
-Personal fork of [VincentKingHsu/vRemoter](https://github.com/VincentKingHsu/vRemoter).
+把蓝牙语音遥控器变成 Mac 的语音麦克风与快捷键控制器，方便在 Codex 等工具中进行 Vibe Coding。
 
-Select **Typeless** under **按键映射 → 语音工具**, then select the same trigger in both apps (tested configuration: Fn). In Typeless choose **vRemoteDr 2ch** as the microphone and use tap-to-start/stop dictation. The default Typeless remote mode is **hold to talk**: keep the voice button pressed while speaking, then release to finish. Select **点按免持／按住说话** for tap-to-toggle: tap once, release and speak, then tap again to finish. Holding and releasing the button also remains available. The original Doubao mode remains the default.
+本项目 fork 自 [VincentKingHsu/vRemoter](https://github.com/VincentKingHsu/vRemoter)，定制开发位于 [`feat/chromecast-typeless`](https://github.com/nettee/vRemoter/tree/feat/chromecast-typeless)。当前版本：**1.2.3-typeless.5**。改动记录见 [CHANGELOG.md](CHANGELOG.md)。
 
-Typeless mode follows explicit key gestures rather than treating Doubao's process state as evidence of Typeless recording. Use the configured Fn shortcut or the remote to end a session; other shortcuts or Typeless's own UI can change its state independently. If the two get out of sync, stop Typeless, use vRemoter's close-microphone control, and start again. Transport failures close the session and report an error rather than pretending audio is active.
+## 语音输入
 
-With the Mac microphone switch enabled, Typeless mode also passes the real Mac microphone through the virtual device outside remote sessions, so existing Typeless shortcuts such as Right Cmd remain usable. Turn that switch off to isolate the remote audio.
+1. 安装原项目的虚拟麦克风驱动 `vRemoteDriver.driver`。已安装的用户无需替换驱动。
+2. 通过 macOS 蓝牙设置配对 Chromecast Voice Remote，启动 vRemoter，并授予麦克风、辅助功能、输入监控和蓝牙权限。
+3. 在“按键映射 → 语音工具”选择 **Typeless**，触发键设为 **Fn / Globe**；在 Typeless 中添加同一个点按开始／结束快捷键。可以保留原来的右 Command 快捷键。
+4. 在 Typeless 中选择 **vRemoteDr 2ch** 作为麦克风。
+5. 选择“点按免持／按住说话”：点按语音键，松手后说话，再点按结束；也可按住说话，松开结束。
 
-The original virtual microphone driver is required. This fork's app does not need a replacement driver. Its update feed points to this fork rather than the upstream binaries.
+新安装默认选择 Typeless、Fn 和点按免持。已有用户的选择保留；需要只按住说话时，可在遥控器模式中选择“按住说话”。原有豆包兼容模式仍可选，Typeless 不依赖它的安装或录音状态。
 
-Validation: `swift run --disable-sandbox vRemote --voice-session-self-test` and `zsh Scripts/run-self-tests.sh`. Hardware validation on 2026-11-19: Apple M4 Pro / macOS 15.7.1 / Chromecast Remote 18D1:9450, firmware 26.5. The user confirmed hold-to-talk dictation using only the remote microphone; the log recorded continuous audio beyond five seconds and closure on release. The user also confirmed existing Right Cmd dictation through the Mac microphone with the same virtual microphone selected. Tap-to-toggle dictation was subsequently confirmed by the user in repeated tests, including an approximately 37-second continuous session. Version 1.2.3-typeless.4 uses realtime MIC_OPEN and stream-zero host-session closing/keepalive. Host-open replies reporting an HTT reason are tracked as host replies, so they cannot be mistaken for a second physical press.
+Mac 麦克风开关打开时，电脑音频也会送入虚拟麦克风，包括遥控器未录音的时候，因此原有右 Command 等 Typeless 快捷键仍可用。关闭 Mac 开关可单独验证遥控器收音。系统静音键控制扬声器，不是麦克风静音。
 
----
+结束录音后，Typeless 将文字放入当前输入框；再按确认键发送。点按控制与音源由 vRemoter 协调；用其他 Typeless 快捷键或其界面结束遥控器会话，可能导致状态不同步。此时先停止 Typeless，再用 vRemoter 的结束录音控制关闭遥控器，重新开始。传输失败会关闭会话并报告错误。
 
-# vRemoter
+退出 vRemoter 后，如需继续使用电脑语音输入，请在 Typeless 中将麦克风改回自动检测或电脑麦克风。
 
-> 本仓库保存 vRemoter 的源码、设计源稿、构建脚本与测试。普通用户请通过 `vincentstudio.org` 系列域名访问官网、下载与更新服务。
+## Codex 日常按键方案
 
-[官方网站](https://vremoter.vincentstudio.org/) · [下载最新版](https://updates.vincentstudio.org/vremoter/) · [v1.2.3 Release](https://github.com/VincentKingHsu/vRemoter/releases/tag/v1.2.3)
+在“按键映射”中启用 Chromecast 映射。下面是实机使用的方案，也保存在 [Examples/chromecast-codex.plist](Examples/chromecast-codex.plist) 中。该文件仅记录偏好配置，不会由安装包自动导入。
 
-## 产品定位
+| 按键 | 映射 | 用途 |
+| --- | --- | --- |
+| 语音 | 语音会话 | 点按开始／结束，或按住说话 |
+| 方向环 | ↑↓←→ | 移动光标、选择菜单、历史输入 |
+| 中央确认 | Return | 确认／发送，取决于前台焦点及发送设置 |
+| 返回 | Escape | 取消／关闭弹层；不是页面后退 |
+| Home | 切换应用 | 连按轮换，停手 1 秒选定；切换中可用左右方向选择 |
+| YouTube | Tab | 移动焦点／缩进 |
+| Netflix | Delete | 删除光标前一个字符 |
+| 信源 | ⌘V | 粘贴 |
+| 音量＋／－、静音 | 系统声音 | 调整扬声器 |
+| 电源 | 禁用 | 不发送动作 |
 
-vRemoter 把蓝牙语音遥控器变成 macOS 上的 Vibe Coding 控制器：遥控器语音键控制豆包输入法，遥控器麦克风与 MacBook 麦克风混合为同一个 CoreAudio 输入设备 `vRemoteDr 2ch`。
+映射作用于当前前台应用。Escape 在普通文本框里可能没有可见效果；Codex 的页面后退为 ⌘[。可在 Codex 的 Settings → Keyboard Shortcuts 核对本机快捷键。
 
-已接入的遥控器：
+## 验证记录
 
-- X6-Remote（VID `0x1D5A` / PID `0xC081`）
-- Google Chromecast Remote（VID `0x18D1` / PID `0x9450`）
+2026-11-19 实机：Apple M4 Pro、macOS 15.7.1、Chromecast Remote `18D1:9450`、固件 `26.5`、Typeless 2.11.0。
 
-Chromecast Remote 已实现语音键双模式：短按第一次打开、第二次关闭；长按时持续录音，松手自动关闭。APP 还提供按型号保存的按键映射，可把方向、确认、返回、Home、YouTube、Netflix、信源、音量等按键改为常用 macOS 操作。
+- 已验证仅遥控器收音的按住说话、松开出字。
+- 已验证点按免持，多轮连续出字，最长一轮约 37 秒，无中断。
+- 已验证同一虚拟麦克风下，电脑右 Command 语音输入仍可用。
+- 已验证删除、确认、Tab、左右方向与应用切换；返回键日志确认发送 Escape。未逐项验证全部 Codex 界面效果。
+- X6 兼容代码保留，本 fork 未进行 X6 实机测试。
 
-当前版本：`1.2.3`
+## 构建与检查
 
-## 1.2.3 新功能
-
-- 新增系统级「锁屏」「睡眠」「切换应用」映射动作，遥控器电源键等均可指定。
-- 切换应用采用定时器会话：单击切到上一个应用；会话中连按或按方向键逐个选择，停手 1 秒自动落地。X6 与 Chromecast 同一套交互。
-- 双路麦克风的「静音 / 独奏」按钮合并为拨动开关，混音逻辑不变。
-- 按键映射的自定义菜单显示「自定义（当前：…）」。
-- 豆包输入法设置向导新增第 5 步引导图。
-- 主界面副标题显示当前版本号。
-
-## 1.1.1 修复
-
-- 修复 Chromecast Voice Remote 使用一段时间后，短按偶尔只打开豆包、遥控器麦克风却未持续收音的问题。
-- 修复电脑 Option 关闭豆包时，较晚到达的音频状态可能短暂重新开启遥控器音频的问题。
-- 改进双遥控器同时连接时的会话隔离、开麦确认与有限重试。
-- 修复 X6 第一次短按开麦可能被误判为旧音频事件的问题。
-- 更新按键映射页中的 Chromecast Remote 产品图。
-
-## 1.1.0 新功能
-
-- 新增 Chromecast Voice Remote（VID `0x18D1` / PID `0x9450`）语音与按键支持。
-- 新增 X6 Remote 与 Chromecast Voice Remote 按键映射页面。
-- 豆包语音触发键可选择 Option、Command、Control、Shift 或 Fn，默认 Option；所选按键必须与豆包输入法设置一致。
-- 映射设置跟随型号，不绑定某一只遥控器；更换同型号设备后继续沿用。
-- 启用映射后拦截设备原始动作，再由 vRemoter 发送所选键盘、媒体键或自定义快捷键；关闭映射即可恢复系统原行为。
-- 主控制台去掉 X6 专属措辞，X6 与 Chromecast Remote 可以同时连接。
-
-![vRemoter 1.2.3 音频控制台](docs/assets/screenshots/vremoter-audio-1.2.3.png)
-
-![vRemoter 1.2.3 Chromecast 按键映射](docs/assets/screenshots/vremoter-mapping-chromecast-1.2.3.png)
-
-完整历史见 [CHANGELOG.md](CHANGELOG.md)。
-
-当前支持边界：Chromecast 仅确认上述 VID/PID；X6 鼠标模式切换键由设备固件内部处理，不能单独重映射。语音键保留给豆包语音控制。Fn 的实际行为取决于 Mac 与豆包配置，建议首次使用时现场测试。
-
-## 支持开发
-
-vRemoter 免费提供。制作不易，麻烦打个赏补偿一点我的 Token 费吧。谢主隆恩🙏🙏🙏～～～
-
-| 微信 / WeChat | 支付宝 / Alipay | PayPal |
-|---|---|---|
-| <img src="docs/assets/donate/wechat.JPG" alt="微信打赏二维码" width="220"> | <img src="docs/assets/donate/alipay.JPG" alt="支付宝打赏二维码" width="220"> | <img src="docs/assets/donate/paypal.JPG" alt="PayPal donation QR code" width="220"> |
-
-## 仓库与公开服务边界
-
-| 内容 | 位置 | 是否公开 |
-|---|---|---|
-| APP、驱动构建、测试与设计 | 本 GitHub 仓库 | 是 |
-| 官网静态源文件 | `docs/` | 是，部署结果见官网 |
-| 官网 | [vremoter.vincentstudio.org](https://vremoter.vincentstudio.org/) | 是 |
-| 更新、PKG/DMG、购买配置 | [updates.vincentstudio.org/vremoter](https://updates.vincentstudio.org/vremoter/) | 是 |
-| 原始宣传视频与市场素材 | 仓库外 `../marketing/` | 否，不上传 Git |
-
-遥控器相关 GitHub 仓库：
-
-- [VincentKingHsu/vRemoter](https://github.com/VincentKingHsu/vRemoter)
-- [VincentKingHsu/x6-remote-voice-bridge](https://github.com/VincentKingHsu/x6-remote-voice-bridge)
-- [VincentKingHsu/MiRemoteVoice](https://github.com/VincentKingHsu/MiRemoteVoice)
-
-## 目录
-
-- `Sources/vRemote/`：APP 主程序、BLE/ATVV、双麦混音、UI、更新与购买配置。
-- `Driver/`：生成 `vRemoteDriver.driver` 的实验性构建脚本。
-- `Packaging/`：APP 元数据、本地化与 PKG 安装脚本。
-- `Resources/`：APP 内置权限向导、商业入口与支持开发图片。
-- `SelfTests/`：硬件协议与更新配置回归数据。
-- `Design/`：冻结 UI 和 Logo 的 Figma 本地插件源稿。
-- `docs/`：公开官网静态源文件。
-- `Server/`：马来西亚服务器配置与发布清单模板。
-- `OPERATIONS.md`：从构建到上线和回滚的操作手册。
-
-## 构建
-
-```bash
-./run-self-tests.sh
-./package-app.sh
-./build-pkg.sh
-./build-dmg.sh
+```sh
+swift run --disable-sandbox vRemote --voice-session-self-test
+zsh Scripts/run-self-tests.sh
+zsh Scripts/package-app.sh
 ```
 
-- `PKG`：首次安装或驱动发生变化时使用，包含 APP 与音频驱动。
-- `DMG`：仅更新 APP，适合已经安装过驱动且本次驱动未变化的用户。
+产物为 `dist/build/vRemote.app`。构建脚本使用本地 ad-hoc 签名，尚未进行 Developer ID 签名与公证。已有驱动时仅需更新 App；驱动构建与分发限制见 [Driver/README.md](Driver/README.md) 和 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
-1.1.1 的驱动没有变化：PKG 供首次安装，DMG 供已经安装过驱动的用户覆盖更新。当前发布包尚未完成 Developer ID 签名与公证，下载页必须明确标注这一状态；正式广泛分发前仍须完成签名、公证与真实机器安装验证。
+更新源指向本 fork 的 GitHub Releases；不会从上游下载应用覆盖定制版。仓库有源码不代表已经发布可下载的 Release。
 
-## 更新策略
+## 源码与历史
 
-APP 从以下地址读取版本清单：
+- `Sources/vRemote/`：App、BLE/ATVV、混音、状态协调与按键映射。
+- `SelfTests/`：协议与配置回归数据。
+- `Scripts/`：构建、打包与测试脚本。
+- `Examples/`：实机使用的遥控器配置示例。
+- `docs/`：随仓库维护的静态页面；历史截图来自上游，可能与当前界面不同。
+- `CHANGELOG.md`：本 fork 改动及上游历史。
+- `OPERATIONS.md`、`Server/`、`Design/`：保留的上游运维与设计材料，不代表本 fork 已部署这些服务。
 
-`https://updates.vincentstudio.org/vremoter/releases.json`
-
-- 普通 APP 更新：清单中同时提供 DMG/PKG，APP 自动优先下载 DMG。
-- 驱动更新：将 `driver_update_required` 设为 `true`，APP 强制下载 PKG。
-- 首次安装：官网始终推荐 PKG。
-
-购买链接从以下地址动态读取：
-
-`https://updates.vincentstudio.org/vremoter/commerce.json`
-
-修改公开配置即可控制购买入口，不需要重新发布 APP。没有启用且有效的购买链接时，APP 会隐藏“购买遥控器”按钮。
-
-## 发布前阻断项
-
-1. 当前驱动是对 BlackHole GPL v3 二进制的修改构建。公开分发前必须选择：提供驱动对应源码与构建材料，或取得适用于闭源分发的商业授权。
-2. APP、驱动与 PKG/DMG 尚需 Developer ID 签名和 notarization。
-3. 每次发布都要验证首次 PKG 安装、DMG 覆盖更新、自动检查更新、购买链接刷新和卸载/回滚。
-
-## 相关文档
-
-- [完整发布与服务器运维手册](OPERATIONS.md)
-- [第三方许可说明](THIRD_PARTY_NOTICES.md)
-- [音频驱动说明](Driver/README.md)
-- [冻结 UI 说明](Design/vRemoter-UI-v1-Frozen/UI-FREEZE.md)
+原项目作者与第三方归属保留；本 App 使用 [MIT 许可](LICENSE)；第三方与音频驱动许可见第三方许可说明及对应源文件。

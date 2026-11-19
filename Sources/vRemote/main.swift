@@ -1,7 +1,7 @@
 // vRemote for macOS.
 //
 // 1. Supported remote voice key → matching Option toggle semantics
-// 2. Remote ATVV + Mac microphone → aligned mix → vRemoteDr 2ch → Doubao
+// 2. Remote ATVV + Mac microphone → aligned mix → vRemoteDr 2ch → configured voice input tool
 // 3. A physical Mac Option key controls the same remote microphone session
 //
 // macOS-only. Requires:
@@ -10,7 +10,7 @@
 //     Accessibility) for Option observation and Search suppression
 //   * vRemoteDriver.driver installed and visible as vRemoteDr 2ch in
 //     System Settings → Sound → Input/Output
-//   * Doubao IME configured for Option-as-voice-mode trigger
+//   * Voice input tool configured with the same trigger as vRemoter
 //
 // Run:   swift run
 // Quit:  menu bar icon → 退出, or Ctrl+C
@@ -120,14 +120,6 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         )
         updates.target = self
         menu.addItem(updates)
-
-        let donation = NSMenuItem(
-            title: L10n.text("打赏", "Buy me a coffee"),
-            action: #selector(openDonation),
-            keyEquivalent: ""
-        )
-        donation.target = self
-        menu.addItem(donation)
 
         menu.addItem(.separator())
         let quit = NSMenuItem(
@@ -485,7 +477,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let doubaoSnapshot = doubaoAudioState.snapshotNow()
         let doubaoUsesVRemote = doubaoSnapshot.inputDeviceNames.contains("vRemoteDr 2ch")
         let statusText: String
-        if doubaoSnapshot.isRecording && !doubaoUsesVRemote {
+        if AppStorage.voiceInputTool.observesDoubao && doubaoSnapshot.isRecording && !doubaoUsesVRemote {
             statusText = L10n.text("豆包输入设备错误", "Incorrect Doubao input")
         } else if remoteStreaming {
             statusText = L10n.text("遥控器录音中", "Remote recording")
@@ -540,7 +532,8 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 self?.x6BLE.closeMicrophone(force: true)
                 self?.chromecastBLE.closeMicrophone(force: true)
                 self?.debugWindow.updateRemoteLevel(-120)
-            } else if self?.doubaoAudioState.snapshotNow().isRecording == true {
+            } else if AppStorage.voiceInputTool.observesDoubao,
+                      self?.doubaoAudioState.snapshotNow().isRecording == true {
                 self?.openPreferredRemoteMicrophone()
             }
             self?.updateStatus()
@@ -564,10 +557,6 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func openDebugWindow() {
         debugWindow.show()
-    }
-
-    @objc private func openDonation() {
-        debugWindow.showDonation()
     }
 
     @objc private func openVersionUpdates() {

@@ -58,7 +58,7 @@ enum Key {
         post(trigger: trigger, keyDown: false)
     }
 
-    /// A deliberate short modifier click for Doubao's toggle mode.
+    /// A deliberate short modifier click for the configured voice tool's toggle mode.
     static func triggerTap(
         _ trigger: InputTriggerKey = AppStorage.inputTriggerKey,
         completion: (() -> Void)? = nil
