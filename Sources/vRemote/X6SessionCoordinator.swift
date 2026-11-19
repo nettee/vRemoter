@@ -75,6 +75,7 @@ final class X6SessionCoordinator {
     private var routeActive = false
     private var sessionRemote: VoiceRemoteID?
     private var streamingRemotes = Set<VoiceRemoteID>()
+    private var hostRequestedRemotes = Set<VoiceRemoteID>()
     private var openRequestedRemote: VoiceRemoteID?
     private var physicalVoiceGestures = [VoiceRemoteID: PhysicalVoiceGesture]()
 
@@ -132,6 +133,9 @@ final class X6SessionCoordinator {
     ) {
         let snapshot = doubaoState.snapshotNow()
         let inserted = streamingRemotes.insert(remote).inserted
+        if reason == 0x00, phase == .opening || phase == .open {
+            hostRequestedRemotes.insert(remote)
+        }
         if openRequestedRemote == remote {
             openRequestedRemote = nil
             openConfirmationWorkItem?.cancel()
@@ -234,6 +238,7 @@ final class X6SessionCoordinator {
     }
 
     func remoteAudioStopped(remote: VoiceRemoteID, reason: UInt8) {
+        let wasHostRequested = hostRequestedRemotes.remove(remote) != nil
         streamingRemotes.remove(remote)
         if openRequestedRemote == remote {
             openRequestedRemote = nil
@@ -292,6 +297,12 @@ final class X6SessionCoordinator {
             return
         }
 
+        if wasHostRequested, remote == .chromecast, reason == 0x02,
+           !voiceInputToolProvider().observesDoubao {
+            closeRecognitionFromRemote(reason: "Chromecast button ended host stream")
+            return
+        }
+
         print(
             "[VOICE-SESSION] AUDIO_STOP remote=\(remote.rawValue) reason=" +
             String(format: "0x%02x", reason) +
@@ -309,6 +320,7 @@ final class X6SessionCoordinator {
     }
 
     func remoteDisconnected(_ remote: VoiceRemoteID) {
+        hostRequestedRemotes.remove(remote)
         streamingRemotes.remove(remote)
         physicalVoiceGestures.removeValue(forKey: remote)
         if openRequestedRemote == remote {
@@ -423,6 +435,7 @@ final class X6SessionCoordinator {
     }
 
     func forceClose() {
+        hostRequestedRemotes.removeAll()
         generation &+= 1
         cancelScheduledWork()
         phase = .closed
@@ -616,6 +629,7 @@ final class X6SessionCoordinator {
     }
 
     private func finalizeClosed(reason: String) {
+        hostRequestedRemotes.removeAll()
         generation &+= 1
         cancelScheduledWork()
         phase = .closed
@@ -870,6 +884,7 @@ final class X6SessionCoordinator {
     }
 
     private func closeAllRemoteTransports() {
+        hostRequestedRemotes.removeAll()
         onMicrophoneCloseRequested?()
         streamingRemotes.removeAll()
         openRequestedRemote = nil

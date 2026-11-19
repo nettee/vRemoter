@@ -17,7 +17,7 @@ enum ChromecastVoiceMode: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .holdToTalk: L10n.text("按住说话", "Hold to talk")
-        case .hybrid: L10n.text("点按切换／按住说话", "Tap toggle / hold")
+        case .hybrid: L10n.text("点按免持／按住说话", "Tap toggle / hold")
         }
     }
 }

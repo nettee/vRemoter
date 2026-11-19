@@ -142,6 +142,7 @@ enum VoiceSessionSelfTest {
         testTypelessUnavailableTransport(checks)
         testTypelessConfigurationChange(checks)
         testTypelessHoldOnlyShortPress(checks)
+        testHandsfreeButtonStopsHostStream(checks)
         emit("[SELF-TEST] completed failures=\(checks.failures)")
         return checks.failures == 0
     }
@@ -367,6 +368,22 @@ enum VoiceSessionSelfTest {
         c.expect(h.openRequests.isEmpty, "hold-only mode never tries unsupported persistent reopening")
         c.expect(h.triggerTapCount == 2, "hold-only short release balances start/stop")
         c.expect(h.coordinator.debugSnapshot.phase == "closed", "hold-only short release does not leave Typeless listening")
+    }
+
+    private static func testHandsfreeButtonStopsHostStream(_ c: CheckContext) {
+        let h = Harness(initialState: .unavailable, tool: .typeless, mode: .hybrid)
+        h.beginChromecastPress()
+        h.advance(0.15)
+        h.endChromecastPress()
+        // BLEBridge normalizes a host-requested AUDIO_START to reason zero,
+        // even when firmware reports HTT (0x03). Some remotes only emit STOP
+        // on the next physical tap, without another START edge.
+        h.coordinator.remoteAudioStarted(remote: .chromecast, reason: 0x00)
+        h.coordinator.remoteAudioStopped(remote: .chromecast, reason: 0x02)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        c.expect(h.triggerTapCount == 2, "second tap ending a host stream stops Typeless exactly once")
+        c.expect(h.openRequests.count == 1, "second tap ending a host stream never reopens audio")
+        c.expect(h.coordinator.debugSnapshot.phase == "closed", "second tap ending a host stream closes the session")
     }
 }
 #endif

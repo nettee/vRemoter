@@ -185,7 +185,7 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.refreshCombinedStreaming()
             self?.updateStatus()
         }
-        x6BLE.onAudioStarted = { [weak self] reason, _ in
+        x6BLE.onAudioStarted = { [weak self] reason, _, _ in
             self?.lastVoiceRemote = .x6
             self?.x6Session.remoteAudioStarted(
                 remote: .x6,
@@ -238,12 +238,12 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.refreshCombinedStreaming()
             self?.updateStatus()
         }
-        chromecastBLE.onAudioStarted = { [weak self] reason, _ in
+        chromecastBLE.onAudioStarted = { [weak self] reason, _, hostRequested in
             self?.lastVoiceRemote = .chromecast
             self?.x6Session.remoteAudioStarted(
                 remote: .chromecast,
-                reason: reason,
-                supportsPhysicalHoldGesture: true
+                reason: hostRequested ? 0x00 : reason,
+                supportsPhysicalHoldGesture: !hostRequested
             )
         }
         chromecastBLE.onAudioStopped = { [weak self] reason in

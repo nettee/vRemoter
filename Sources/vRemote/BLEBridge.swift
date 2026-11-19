@@ -36,7 +36,7 @@ final class BLEBridge: NSObject {
     /// Raw ATVV session edges. Unlike `onStreamingChanged`, these preserve
     /// the protocol reason so X6 can distinguish a native hold-to-talk stream
     /// from a host-requested persistent stream.
-    var onAudioStarted: ((UInt8 /* reason */, Int /* sampleRate */) -> Void)?
+    var onAudioStarted: ((UInt8 /* reason */, Int /* sampleRate */, Bool /* host requested */) -> Void)?
     var onAudioStopped: ((UInt8 /* reason */) -> Void)?
     var onMicrophoneOpenFailed: ((UInt16 /* code */) -> Void)?
     /// Called when the device connection state changes.
@@ -57,6 +57,8 @@ final class BLEBridge: NSObject {
     private let protocolHandler = ATVVProtocol()
     private var streamID: UInt8 = 0
     private var isStreaming = false
+    private var awaitingHostAudioStart = false
+    private var hostRequestedStream = false
     private var levelSumSq: Int64 = 0
     private var levelCount: Int = 0
     private var levelPeak: Int = 0
@@ -110,8 +112,8 @@ final class BLEBridge: NSObject {
         closeTimeoutWorkItem?.cancel()
         closeTimeoutWorkItem = nil
         stopKeepAliveTimer()
-        if isStreaming {
-            if let close = try? protocolHandler.micCloseCommand(streamID: streamID) {
+        if isStreaming || awaitingHostAudioStart {
+            if let close = try? protocolHandler.micCloseCommand(streamID: streamID, hostRequested: hostRequestedStream || awaitingHostAudioStart) {
                 writeCommand(close)
                 print("[\(logTag)] TX micClose before shutdown")
             }
@@ -154,7 +156,10 @@ final class BLEBridge: NSObject {
         do {
             protocolHandler.prepareForAudioStream()
             pendingAudioSyncCount = 0
-            guard writeCommand(try protocolHandler.micOpenCommand()) else {
+            let command = try protocolHandler.micOpenCommand(realtime: nameHint == "Chromecast Remote")
+            awaitingHostAudioStart = true
+            guard writeCommand(command) else {
+                awaitingHostAudioStart = false
                 return .retryAfter(0.15)
             }
             lastMicOpenAt = now
@@ -189,8 +194,9 @@ final class BLEBridge: NSObject {
         stopKeepAliveTimer()
         do {
             writeCommand(
-                try protocolHandler.micCloseCommand(streamID: streamID)
+                try protocolHandler.micCloseCommand(streamID: streamID, hostRequested: hostRequestedStream || awaitingHostAudioStart)
             )
+            awaitingHostAudioStart = false
             print("[\(logTag)] TX micClose requested by gesture")
             closeTimeoutWorkItem?.cancel()
             let timeout = DispatchWorkItem { [weak self] in
@@ -331,7 +337,7 @@ final class BLEBridge: NSObject {
     private func sendKeepAlive() {
         guard isStreaming, let s = protocolHandler.codec else { return }
         do {
-            let cmd = try protocolHandler.keepAliveCommand(streamID: streamID)
+            let cmd = try protocolHandler.keepAliveCommand(streamID: streamID, hostRequested: hostRequestedStream)
             writeCommand(cmd)
             // Quiet log; user only needs levels to debug.
         } catch {
@@ -370,6 +376,8 @@ final class BLEBridge: NSObject {
         closeTimeoutWorkItem = nil
         let wasStreaming = isStreaming
         isStreaming = false
+        awaitingHostAudioStart = false
+        hostRequestedStream = false
         protocolHandler.endAudioStream()
         stopKeepAliveTimer()
         if wasStreaming {
@@ -604,8 +612,13 @@ extension BLEBridge: CBPeripheralDelegate {
             protocolHandler.beginAudioStream(codec: codec)
             streamID = sid
             isStreaming = true
+            // Firmware 26.5 reports reason=HTT even for MIC_OPEN(1).
+            // Preserve origin instead of mistaking that reply for a second
+            // physical press, and address host sessions as stream zero.
+            hostRequestedStream = awaitingHostAudioStart
+            awaitingHostAudioStart = false
             notifyStreaming(true)
-            onAudioStarted?(reason, codec.sampleRate)
+            onAudioStarted?(reason, codec.sampleRate, hostRequestedStream)
             diagFrameCount = 0
             streamFrameCount = 0
             streamSampleCount = 0

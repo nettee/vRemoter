@@ -66,7 +66,7 @@ final class ATVVProtocol {
         hasPendingSyncBeforeStart = false
     }
 
-    func micOpenCommand() throws -> Data {
+    func micOpenCommand(realtime: Bool = false) throws -> Data {
         guard let capabilities, let codec else {
             throw BridgeError.protocolFailure("尚未完成 ATVV capabilities 协商")
         }
@@ -74,22 +74,22 @@ final class ATVVProtocol {
         case .v04:
             return Data([0x0C, 0x00, codec.rawValue])
         case .v10:
-            return Data([0x0C, 0x00])  // playback/realtime mode
+            return Data([0x0C, realtime ? 0x01 : 0x00])
         }
     }
 
-    func micCloseCommand(streamID: UInt8) throws -> Data {
+    func micCloseCommand(streamID: UInt8, hostRequested: Bool = false) throws -> Data {
         guard let capabilities else {
             throw BridgeError.protocolFailure("尚未完成 ATVV capabilities 协商")
         }
-        return capabilities.version == .v04 ? Data([0x0D]) : Data([0x0D, streamID])
+        return capabilities.version == .v04 ? Data([0x0D]) : Data([0x0D, hostRequested ? 0 : streamID])
     }
 
-    func keepAliveCommand(streamID: UInt8) throws -> Data {
+    func keepAliveCommand(streamID: UInt8, hostRequested: Bool = false) throws -> Data {
         guard let capabilities else {
             throw BridgeError.protocolFailure("尚未完成 ATVV capabilities 协商")
         }
-        return capabilities.version == .v04 ? try micOpenCommand() : Data([0x0E, streamID])
+        return capabilities.version == .v04 ? try micOpenCommand() : Data([0x0E, hostRequested ? 0 : streamID])
     }
 
     func parseControl(_ data: Data) -> ATVVControlEvent {

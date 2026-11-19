@@ -2,7 +2,7 @@
 
 Personal fork of [VincentKingHsu/vRemoter](https://github.com/VincentKingHsu/vRemoter).
 
-Select **Typeless** under **按键映射 → 语音工具**, then select the same trigger in both apps (tested configuration: Fn). In Typeless choose **vRemoteDr 2ch** as the microphone and use tap-to-start/stop dictation. The default Typeless remote mode is **hold to talk**: keep the voice button pressed while speaking, then release to finish. An optional hybrid mode also supports tap-to-toggle on firmware that accepts host-initiated reopening. On our firmware 26.5 test device, persistent reopening currently times out, so hybrid mode has not passed hardware validation. The original Doubao mode remains the default.
+Select **Typeless** under **按键映射 → 语音工具**, then select the same trigger in both apps (tested configuration: Fn). In Typeless choose **vRemoteDr 2ch** as the microphone and use tap-to-start/stop dictation. The default Typeless remote mode is **hold to talk**: keep the voice button pressed while speaking, then release to finish. Select **点按免持／按住说话** for tap-to-toggle: tap once, release and speak, then tap again to finish. Holding and releasing the button also remains available. The original Doubao mode remains the default.
 
 Typeless mode follows explicit key gestures rather than treating Doubao's process state as evidence of Typeless recording. Use the configured Fn shortcut or the remote to end a session; other shortcuts or Typeless's own UI can change its state independently. If the two get out of sync, stop Typeless, use vRemoter's close-microphone control, and start again. Transport failures close the session and report an error rather than pretending audio is active.
 
@@ -10,7 +10,7 @@ With the Mac microphone switch enabled, Typeless mode also passes the real Mac m
 
 The original virtual microphone driver is required. This fork's app does not need a replacement driver. Its update feed points to this fork rather than the upstream binaries.
 
-Validation: `swift run --disable-sandbox vRemote --voice-session-self-test` and `zsh Scripts/run-self-tests.sh`. Hardware validation on 2026-11-19: Apple M4 Pro / macOS 15.7.1 / Chromecast Remote 18D1:9450, firmware 26.5. The user confirmed hold-to-talk dictation using only the remote microphone; the log recorded continuous audio beyond five seconds and closure on release. The user also confirmed existing Right Cmd dictation through the Mac microphone with the same virtual microphone selected. Tap-to-toggle persistent reopening failed and remains unverified for this firmware.
+Validation: `swift run --disable-sandbox vRemote --voice-session-self-test` and `zsh Scripts/run-self-tests.sh`. Hardware validation on 2026-11-19: Apple M4 Pro / macOS 15.7.1 / Chromecast Remote 18D1:9450, firmware 26.5. The user confirmed hold-to-talk dictation using only the remote microphone; the log recorded continuous audio beyond five seconds and closure on release. The user also confirmed existing Right Cmd dictation through the Mac microphone with the same virtual microphone selected. Tap-to-toggle dictation was subsequently confirmed by the user in repeated tests, including an approximately 37-second continuous session. Version 1.2.3-typeless.4 uses realtime MIC_OPEN and stream-zero host-session closing/keepalive. Host-open replies reporting an HTT reason are tracked as host replies, so they cannot be mistaken for a second physical press.
 
 ---
 
