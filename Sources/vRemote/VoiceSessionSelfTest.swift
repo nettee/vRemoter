@@ -47,7 +47,7 @@ enum VoiceSessionSelfTest {
         var openResults = [RemoteMicrophoneOpenResult]()
         var preferredRemote: VoiceRemoteID? = .chromecast
 
-        init(initialState: DoubaoAudioStateMonitor.State = .inactive) {
+        init(initialState: DoubaoAudioStateMonitor.State = .inactive, tool: VoiceInputTool = .doubao, mode: ChromecastVoiceMode = .hybrid) {
             doubao = FakeDoubaoState(state: initialState)
             var routeSink: ((Bool) -> Void)?
             var triggerSink: (() -> Void)?
@@ -67,6 +67,8 @@ enum VoiceSessionSelfTest {
             nowSink = { [weak self] in
                 self?.clock ?? Date(timeIntervalSince1970: 0)
             }
+            coordinator.voiceInputToolProvider = { tool }
+            coordinator.chromecastVoiceModeProvider = { mode }
             coordinator.preferredRemoteProvider = { [weak self] in
                 self?.preferredRemote
             }
@@ -133,6 +135,13 @@ enum VoiceSessionSelfTest {
         testChromecastReasonZeroWhileClosedIsIgnored(checks)
         testIndependentRemoteStops(checks)
         testDebouncedRetry(checks)
+        testTypelessWithoutDoubao(checks)
+        testTypelessLongPress(checks)
+        testTypelessKeyboardClose(checks)
+        testTypelessDisconnect(checks)
+        testTypelessUnavailableTransport(checks)
+        testTypelessConfigurationChange(checks)
+        testTypelessHoldOnlyShortPress(checks)
         emit("[SELF-TEST] completed failures=\(checks.failures)")
         return checks.failures == 0
     }
@@ -278,6 +287,86 @@ enum VoiceSessionSelfTest {
             h.coordinator.debugSnapshot.openRequestedRemote == .chromecast,
             "only the sent retry becomes pending"
         )
+    }
+
+    private static func testTypelessWithoutDoubao(_ c: CheckContext) {
+        let h = Harness(initialState: .unavailable, tool: .typeless)
+        h.beginChromecastPress()
+        h.advance(0.15)
+        h.endChromecastPress()
+        h.coordinator.remoteAudioStarted(remote: .chromecast, reason: 0x00)
+        RunLoop.current.run(until: Date().addingTimeInterval(1.1))
+        c.expect(h.coordinator.debugSnapshot.phase == "open", "Typeless stays open beyond Doubao's one-second timeout")
+        h.doubao.emit(.inactive)
+        c.expect(h.coordinator.debugSnapshot.phase == "open", "unrelated Doubao state cannot stop Typeless")
+        h.beginChromecastPress()
+        h.advance(0.15)
+        h.endChromecastPress()
+        RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        c.expect(h.triggerTapCount == 2, "Typeless's second tap sends exactly one stop shortcut")
+        c.expect(h.coordinator.debugSnapshot.phase == "closed", "Typeless closes without Doubao confirmation")
+    }
+
+    private static func testTypelessLongPress(_ c: CheckContext) {
+        let h = Harness(initialState: .unavailable, tool: .typeless)
+        h.beginChromecastPress()
+        h.advance(0.8)
+        h.endChromecastPress()
+        RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        c.expect(h.triggerTapCount == 2, "Typeless hold/release sends start and stop taps")
+        c.expect(h.openRequests.isEmpty, "Typeless hold/release does not request persistent audio")
+        c.expect(h.coordinator.debugSnapshot.phase == "closed", "Typeless hold/release finishes closed")
+    }
+
+    private static func testTypelessKeyboardClose(_ c: CheckContext) {
+        let h = Harness(initialState: .active, tool: .typeless)
+        h.beginChromecastPress()
+        h.advance(0.1)
+        h.endChromecastPress()
+        h.coordinator.remoteAudioStarted(remote: .chromecast, reason: 0x00)
+        h.coordinator.triggerDownObserved(isSynthetic: false)
+        h.coordinator.triggerUpObserved(isSynthetic: false)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        c.expect(h.triggerTapCount == 1, "physical Fn stop is not replayed")
+        c.expect(h.coordinator.debugSnapshot.phase == "closed", "keyboard can stop Typeless despite unrelated Doubao recording")
+    }
+
+    private static func testTypelessDisconnect(_ c: CheckContext) {
+        let h = Harness(initialState: .unavailable, tool: .typeless)
+        h.beginChromecastPress()
+        h.preferredRemote = nil
+        h.coordinator.remoteDisconnected(.chromecast)
+        c.expect(h.triggerTapCount == 2, "disconnect balances Typeless's start shortcut")
+        c.expect(h.coordinator.debugSnapshot.phase == "closed", "disconnect closes Typeless session and route")
+    }
+
+    private static func testTypelessUnavailableTransport(_ c: CheckContext) {
+        let h = Harness(initialState: .unavailable, tool: .typeless)
+        h.openResults = [.unavailable]
+        h.beginChromecastPress()
+        h.advance(0.1)
+        h.endChromecastPress()
+        c.expect(h.triggerTapCount == 2, "unavailable transport stops Typeless rather than pretending to record")
+        c.expect(h.coordinator.debugSnapshot.phase == "closed", "unavailable transport fails visibly and closes")
+    }
+
+    private static func testTypelessConfigurationChange(_ c: CheckContext) {
+        let h = Harness(initialState: .unavailable, tool: .typeless)
+        h.beginChromecastPress()
+        h.coordinator.prepareForConfigurationChange()
+        c.expect(h.triggerTapCount == 2, "configuration change stops the original Typeless shortcut")
+        c.expect(h.coordinator.debugSnapshot.phase == "closed", "configuration change clears the old session")
+    }
+
+    private static func testTypelessHoldOnlyShortPress(_ c: CheckContext) {
+        let h = Harness(initialState: .unavailable, tool: .typeless, mode: .holdToTalk)
+        h.beginChromecastPress()
+        h.advance(0.1)
+        h.endChromecastPress()
+        RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        c.expect(h.openRequests.isEmpty, "hold-only mode never tries unsupported persistent reopening")
+        c.expect(h.triggerTapCount == 2, "hold-only short release balances start/stop")
+        c.expect(h.coordinator.debugSnapshot.phase == "closed", "hold-only short release does not leave Typeless listening")
     }
 }
 #endif

@@ -1,6 +1,30 @@
 import Foundation
 
 enum AppStorage {
+    static var chromecastVoiceMode: ChromecastVoiceMode {
+        get {
+            guard let raw = UserDefaults.standard.string(forKey: "chromecastVoiceMode") else {
+                return .holdToTalk
+            }
+            guard let mode = ChromecastVoiceMode(rawValue: raw) else {
+                preconditionFailure("Invalid chromecastVoiceMode: \(raw)")
+            }
+            return mode
+        }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: "chromecastVoiceMode") }
+    }
+    static var voiceInputTool: VoiceInputTool {
+        get {
+            guard let raw = UserDefaults.standard.string(forKey: "voiceInputTool") else {
+                return .doubao
+            }
+            guard let tool = VoiceInputTool(rawValue: raw) else {
+                preconditionFailure("Invalid voiceInputTool: \(raw)")
+            }
+            return tool
+        }
+        set { UserDefaults.standard.set(newValue.rawValue, forKey: "voiceInputTool") }
+    }
     static let loggingEnabledKey = "loggingEnabled"
     static let recordingEnabledKey = "recordingEnabled"
     static let macInputEnabledKey = "macInputEnabled"

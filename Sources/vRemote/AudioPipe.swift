@@ -48,6 +48,10 @@ final class AudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
 
     private let stateLock = NSLock()
     private var mixActive = false
+    // Typeless can also be started with its own shortcut (e.g. Right Cmd).
+    // Keep the real Mac source available through the virtual microphone
+    // when the user has enabled it, even outside a remote-key session.
+    private var macPassthroughEnabled = AppStorage.voiceInputTool == .typeless
     private var macInputEnabled = AppStorage.macInputEnabled
     private var remoteInputEnabled = AppStorage.remoteInputEnabled
     private var outputDeviceID: AudioDeviceID?
@@ -170,6 +174,13 @@ final class AudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
     var isMacInputEnabled: Bool { inputState.macEnabled }
     var isRemoteInputEnabled: Bool { inputState.remoteEnabled }
     var isOutputDeviceAvailable: Bool { outputDeviceID != nil }
+
+    func setVoiceInputTool(_ tool: VoiceInputTool) {
+        stateLock.lock()
+        macPassthroughEnabled = tool == .typeless
+        clearPendingBuffersLocked()
+        stateLock.unlock()
+    }
 
     func stop() {
         diagnosticsTimer?.invalidate()
@@ -328,7 +339,7 @@ final class AudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
             macLevelAt = Date()
         }
 
-        guard isMixActive else { return }
+        guard isMacRouteActive else { return }
         schedule(
             monoSamples: floats,
             sampleRate: streamDescription.pointee.mSampleRate,
@@ -338,10 +349,10 @@ final class AudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
 
     // MARK: - Queues and resampling
 
-    private var isMixActive: Bool {
+    private var isMacRouteActive: Bool {
         stateLock.lock()
         defer { stateLock.unlock() }
-        return mixActive
+        return mixActive || macPassthroughEnabled
     }
 
     private var inputState: (mixActive: Bool, macEnabled: Bool, remoteEnabled: Bool) {
@@ -377,7 +388,8 @@ final class AudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
 
         stateLock.lock()
         let sourceEnabled = source == .mac ? macInputEnabled : remoteInputEnabled
-        guard mixActive, sourceEnabled else {
+        let sourceActive = mixActive || (source == .mac && macPassthroughEnabled)
+        guard sourceActive, sourceEnabled else {
             stateLock.unlock()
             return
         }
@@ -480,7 +492,7 @@ final class AudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
         var firstRemoteRenderDescription: String?
 
         stateLock.lock()
-        if mixActive {
+        if mixActive || (macPassthroughEnabled && macInputEnabled) {
             let remoteAvailable = pendingRemote.count - pendingRemoteIndex
             if remoteAvailable > 0 {
                 remoteTaken = min(frameCount, remoteAvailable)

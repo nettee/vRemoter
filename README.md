@@ -1,3 +1,19 @@
+# vRemoter · Chromecast + Typeless edition
+
+Personal fork of [VincentKingHsu/vRemoter](https://github.com/VincentKingHsu/vRemoter).
+
+Select **Typeless** under **按键映射 → 语音工具**, then select the same trigger in both apps (tested configuration: Fn). In Typeless choose **vRemoteDr 2ch** as the microphone and use tap-to-start/stop dictation. The default Typeless remote mode is **hold to talk**: keep the voice button pressed while speaking, then release to finish. An optional hybrid mode also supports tap-to-toggle on firmware that accepts host-initiated reopening. On our firmware 26.5 test device, persistent reopening currently times out, so hybrid mode has not passed hardware validation. The original Doubao mode remains the default.
+
+Typeless mode follows explicit key gestures rather than treating Doubao's process state as evidence of Typeless recording. Use the configured Fn shortcut or the remote to end a session; other shortcuts or Typeless's own UI can change its state independently. If the two get out of sync, stop Typeless, use vRemoter's close-microphone control, and start again. Transport failures close the session and report an error rather than pretending audio is active.
+
+With the Mac microphone switch enabled, Typeless mode also passes the real Mac microphone through the virtual device outside remote sessions, so existing Typeless shortcuts such as Right Cmd remain usable. Turn that switch off to isolate the remote audio.
+
+The original virtual microphone driver is required. This fork's app does not need a replacement driver. Its update feed points to this fork rather than the upstream binaries.
+
+Validation: `swift run --disable-sandbox vRemote --voice-session-self-test` and `zsh Scripts/run-self-tests.sh`. Hardware validation on 2026-11-19: Apple M4 Pro / macOS 15.7.1 / Chromecast Remote 18D1:9450, firmware 26.5. The user confirmed hold-to-talk dictation using only the remote microphone; the log recorded continuous audio beyond five seconds and closure on release. The user also confirmed existing Right Cmd dictation through the Mac microphone with the same virtual microphone selected. Tap-to-toggle persistent reopening failed and remains unverified for this firmware.
+
+---
+
 # vRemoter
 
 > 本仓库保存 vRemoter 的源码、设计源稿、构建脚本与测试。普通用户请通过 `vincentstudio.org` 系列域名访问官网、下载与更新服务。

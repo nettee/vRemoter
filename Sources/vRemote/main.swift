@@ -546,7 +546,11 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.updateStatus()
         }
         debugWindow.onInputTriggerChanged = { [weak self] in
+            self?.x6Session.prepareForConfigurationChange()
             self?.x6SearchSuppressor.triggerConfigurationDidChange()
+        }
+        debugWindow.onVoiceInputToolChanged = { tool in
+            AudioPipe.shared.setVoiceInputTool(tool)
         }
         debugWindow.onRemoteMappingEnabledChanged = { [weak self] remote, enabled in
             switch remote {

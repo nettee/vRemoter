@@ -85,6 +85,8 @@ final class X6SessionCoordinator {
     private var openConfirmationWorkItem: DispatchWorkItem?
 
     var preferredRemoteProvider: (() -> VoiceRemoteID?)?
+    var voiceInputToolProvider: () -> VoiceInputTool = { AppStorage.voiceInputTool }
+    var chromecastVoiceModeProvider: () -> ChromecastVoiceMode = { AppStorage.chromecastVoiceMode }
     var onMicrophoneOpenRequested:
         ((VoiceRemoteID, Bool) -> RemoteMicrophoneOpenResult)?
     var onMicrophoneCloseRequested: (() -> Void)?
@@ -147,7 +149,8 @@ final class X6SessionCoordinator {
         }
 
         if supportsPhysicalHoldGesture, reason == 0x03 {
-            let recognitionWasOpen = phase == .open || snapshot.isRecording
+            let recognitionWasOpen = phase == .open
+                || (voiceInputToolProvider().observesDoubao && snapshot.isRecording)
             if physicalVoiceGestures[remote] == nil {
                 physicalVoiceGestures[remote] = PhysicalVoiceGesture(
                     beganAt: now(),
@@ -263,7 +266,9 @@ final class X6SessionCoordinator {
                 return
             }
 
-            if wasHold || gesture.recognitionWasOpen {
+            let holdOnly = !voiceInputToolProvider().observesDoubao
+                && chromecastVoiceModeProvider() == .holdToTalk
+            if wasHold || gesture.recognitionWasOpen || holdOnly {
                 closeRecognitionFromRemote(
                     reason: wasHold
                         ? "ATVV HOLD release"
@@ -316,6 +321,10 @@ final class X6SessionCoordinator {
 
         guard sessionRemote == remote else { return }
         sessionRemote = preferredRemoteProvider?()
+        if sessionRemote == nil, !voiceInputToolProvider().observesDoubao {
+            failGestureSession("遥控器已断开 · Typeless 已停止")
+            return
+        }
         guard phase == .opening || phase == .open,
               let replacement = sessionRemote
         else { return }
@@ -360,7 +369,7 @@ final class X6SessionCoordinator {
         let shouldOpen: Bool
         switch phase {
         case .closed:
-            shouldOpen = !snapshot.isRecording
+            shouldOpen = !voiceInputToolProvider().observesDoubao || !snapshot.isRecording
         case .closing:
             // A second deliberate physical trigger reverses the user's last
             // intent even if CoreAudio has not published inactive yet.
@@ -405,6 +414,14 @@ final class X6SessionCoordinator {
 
     // MARK: - Lifecycle / manual control
 
+    func prepareForConfigurationChange() {
+        if !voiceInputToolProvider().observesDoubao,
+           phase == .open || phase == .opening {
+            triggerTap()
+        }
+        forceClose()
+    }
+
     func forceClose() {
         generation &+= 1
         cancelScheduledWork()
@@ -426,6 +443,7 @@ final class X6SessionCoordinator {
     private func handleDoubaoSnapshot(
         _ snapshot: DoubaoAudioStateMonitor.Snapshot
     ) {
+        guard voiceInputToolProvider().observesDoubao else { return }
         switch snapshot.state {
         case .active:
             switch phase {
@@ -512,7 +530,7 @@ final class X6SessionCoordinator {
     private func beginOpeningWithoutRemote() {
         generation &+= 1
         cancelScheduledWork()
-        phase = .opening
+        phase = voiceInputToolProvider().observesDoubao ? .opening : .open
         owner = .keyboard
         sessionRemote = nil
         activateRemoteRoute()
@@ -528,7 +546,7 @@ final class X6SessionCoordinator {
     ) {
         generation &+= 1
         cancelScheduledWork()
-        phase = .opening
+        phase = voiceInputToolProvider().observesDoubao ? .opening : .open
         self.owner = owner
         sessionRemote = remote
         activateRemoteRoute()
@@ -578,7 +596,18 @@ final class X6SessionCoordinator {
             triggerTap()
         }
         scheduleRouteClose(after: 0.10)
-        scheduleCloseVerification(for: generation)
+        if voiceInputToolProvider().observesDoubao {
+            scheduleCloseVerification(for: generation)
+        } else {
+            // Keep the final audio frames available until the stop tap has
+            // been delivered, then finish without consulting another app.
+            let expectedGeneration = generation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+                guard let self, self.generation == expectedGeneration else { return }
+                self.finalizeClosed(reason: "Typeless stop gesture")
+                self.publish("Typeless 已结束")
+            }
+        }
         publish("遥控器已结束 · 正在关闭豆包")
         print(
             "[VOICE-SESSION] begin closing reason=\(reason) " +
@@ -614,6 +643,7 @@ final class X6SessionCoordinator {
                 "[VOICE-SESSION] MIC_OPEN unavailable " +
                 "remote=\(remote.rawValue)"
             )
+            failGestureSession("无法开启遥控器麦克风：没有音频连接")
             return
         }
 
@@ -651,6 +681,7 @@ final class X6SessionCoordinator {
                 "[VOICE-SESSION] MIC_OPEN target unavailable " +
                 "remote=\(remote.rawValue)"
             )
+            failGestureSession("无法开启遥控器麦克风：设备不可用")
 
         case .failed(let message):
             print(
@@ -675,6 +706,7 @@ final class X6SessionCoordinator {
                 "[VOICE-SESSION] MIC_OPEN retries exhausted " +
                 "remote=\(remote.rawValue)"
             )
+            failGestureSession("遥控器麦克风未响应 · Typeless 已停止，请重试")
             return
         }
         openRetryWorkItem?.cancel()
@@ -732,7 +764,21 @@ final class X6SessionCoordinator {
 
     // MARK: - Verification and route lifecycle
 
+    private func failGestureSession(_ message: String) {
+        guard !voiceInputToolProvider().observesDoubao,
+              phase == .open || phase == .opening else { return }
+        // Balance the start shortcut when audio cannot be established.
+        // Never present a failed transport as a successful recording.
+        triggerTap()
+        finalizeClosed(reason: message)
+        publish(message)
+    }
+
     private func scheduleStartVerification(for expectedGeneration: UInt64) {
+        guard voiceInputToolProvider().observesDoubao else {
+            publish("Typeless 语音会话已开启")
+            return
+        }
         startVerificationWorkItem?.cancel()
         let work = DispatchWorkItem { [weak self] in
             guard let self,

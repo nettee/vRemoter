@@ -260,6 +260,8 @@ private final class ConsoleViewModel: ObservableObject {
     @Published var x6Connected = false
     @Published var chromecastConnected = false
     @Published var inputTriggerKey = AppStorage.inputTriggerKey
+    @Published var voiceInputTool = AppStorage.voiceInputTool
+    @Published var chromecastVoiceMode = AppStorage.chromecastVoiceMode
     @Published var activeModal: ConsoleModal?
     @Published var showX6MicHint = !UserDefaults.standard.bool(
         forKey: "vRemoter.hasCompletedX6MicTest"
@@ -272,15 +274,33 @@ private final class ConsoleViewModel: ObservableObject {
     var onMacInputEnabledChanged: ((Bool) -> Void)?
     var onRemoteInputEnabledChanged: ((Bool) -> Void)?
     var onInputTriggerChanged: (() -> Void)?
+    var onVoiceInputToolChanged: ((VoiceInputTool) -> Void)?
     var onRemoteMappingEnabledChanged: ((SupportedRemoteID, Bool) -> Void)?
 
     var doubaoUsesVRemote: Bool { doubaoInput.contains("vRemoteDr 2ch") }
 
     func setInputTrigger(_ trigger: InputTriggerKey) {
         guard inputTriggerKey != trigger else { return }
+        onInputTriggerChanged?()
         inputTriggerKey = trigger
         AppStorage.inputTriggerKey = trigger
+    }
+
+    func setVoiceInputTool(_ tool: VoiceInputTool) {
+        guard voiceInputTool != tool else { return }
+        // Notify before changing modes so the current session is closed
+        // with its original host semantics.
         onInputTriggerChanged?()
+        voiceInputTool = tool
+        AppStorage.voiceInputTool = tool
+        onVoiceInputToolChanged?(tool)
+    }
+
+    func setChromecastVoiceMode(_ mode: ChromecastVoiceMode) {
+        guard chromecastVoiceMode != mode else { return }
+        onInputTriggerChanged?()
+        chromecastVoiceMode = mode
+        AppStorage.chromecastVoiceMode = mode
     }
 
     func setRemoteMappingEnabled(_ enabled: Bool, remote: SupportedRemoteID) {
@@ -420,6 +440,7 @@ final class DebugWindowController: NSWindowController, NSWindowDelegate {
     var onMacInputEnabledChanged: ((Bool) -> Void)?
     var onRemoteInputEnabledChanged: ((Bool) -> Void)?
     var onInputTriggerChanged: (() -> Void)?
+    var onVoiceInputToolChanged: ((VoiceInputTool) -> Void)?
     var onRemoteMappingEnabledChanged: ((SupportedRemoteID, Bool) -> Void)?
 
     private let model = ConsoleViewModel()
@@ -461,6 +482,9 @@ final class DebugWindowController: NSWindowController, NSWindowDelegate {
         }
         model.onInputTriggerChanged = { [weak self] in
             self?.onInputTriggerChanged?()
+        }
+        model.onVoiceInputToolChanged = { [weak self] tool in
+            self?.onVoiceInputToolChanged?(tool)
         }
         model.onRemoteMappingEnabledChanged = { [weak self] remote, enabled in
             self?.onRemoteMappingEnabledChanged?(remote, enabled)
@@ -728,14 +752,16 @@ private struct StudioMixerView: View {
     private var statusPanel: some View {
         VStack(spacing: 0) {
             StatusRow(
-                title: L10n.text("豆包输入设备", "Doubao input"),
-                value: model.doubaoIsRecording
+                title: model.voiceInputTool == .typeless ? "Typeless" : L10n.text("豆包输入设备", "Doubao input"),
+                value: model.voiceInputTool == .typeless
+                    ? "\(model.chromecastVoiceMode.title) · vRemoteDr 2ch"
+                    : model.doubaoIsRecording
                     ? (model.doubaoUsesVRemote
                         ? L10n.text("vRemoteDr 2ch · 录音中", "vRemoteDr 2ch · Recording")
                         : model.doubaoInput)
                     : L10n.text("当前未录音", "Not recording"),
-                tone: model.doubaoIsRecording && !model.doubaoUsesVRemote ? .error : .good,
-                action: model.doubaoIsRecording && !model.doubaoUsesVRemote
+                tone: model.voiceInputTool.observesDoubao && model.doubaoIsRecording && !model.doubaoUsesVRemote ? .error : .good,
+                action: model.voiceInputTool.observesDoubao && model.doubaoIsRecording && !model.doubaoUsesVRemote
                     ? L10n.text("设置方法", "Fix settings")
                     : nil,
                 onAction: { model.activeModal = .permission(.doubaoInput) }
@@ -848,7 +874,7 @@ private struct KeyMappingView: View {
     var body: some View {
         VStack(spacing: 14) {
             triggerPanel
-                .frame(height: 116)
+                .frame(height: 150)
             HStack(spacing: 14) {
                 devicePanel
                     .frame(width: 238)
@@ -863,13 +889,13 @@ private struct KeyMappingView: View {
                 HStack(spacing: 7) {
                     Image(systemName: "waveform.badge.mic")
                         .foregroundStyle(ConsoleTheme.green)
-                    Text(L10n.text("豆包语音触发键", "Doubao voice trigger"))
+                    Text(L10n.text("语音工具与触发键", "Voice tool and trigger"))
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(ConsoleTheme.text)
                 }
                 Text(L10n.text(
-                    "遥控器语音键与电脑键盘都使用这个按键控制豆包。这里必须与豆包输入法中的语音快捷键保持一致。",
-                    "The remote voice key and Mac keyboard both use this trigger. It must match Doubao Input Method's voice shortcut."
+                    "请选择语音工具，并将触发键设为该工具的点按开始／结束快捷键。Typeless 的麦克风请选择 vRemoteDr 2ch。",
+                    "Select the voice tool and match its tap-to-start/stop shortcut. In Typeless, choose vRemoteDr 2ch as the microphone."
                 ))
                     .font(.system(size: 12.5))
                     .foregroundStyle(ConsoleTheme.secondary)
@@ -877,6 +903,28 @@ private struct KeyMappingView: View {
             }
             Spacer(minLength: 10)
             VStack(alignment: .trailing, spacing: 7) {
+                Picker(L10n.text("语音工具", "Voice tool"), selection: Binding(
+                    get: { model.voiceInputTool },
+                    set: model.setVoiceInputTool
+                )) {
+                    ForEach(VoiceInputTool.allCases) { tool in
+                        Text(tool.title).tag(tool)
+                    }
+                }
+                .frame(width: 220)
+                .disabled(model.remoteStreaming)
+                if model.voiceInputTool == .typeless {
+                    Picker(L10n.text("遥控器模式", "Remote mode"), selection: Binding(
+                        get: { model.chromecastVoiceMode },
+                        set: model.setChromecastVoiceMode
+                    )) {
+                        ForEach(ChromecastVoiceMode.allCases) { mode in
+                            Text(mode.title).tag(mode)
+                        }
+                    }
+                    .frame(width: 250)
+                    .disabled(model.remoteStreaming)
+                }
                 Picker(
                     L10n.text("触发键", "Trigger"),
                     selection: Binding(
@@ -1462,7 +1510,7 @@ private struct OutputChannelView: View {
             Text(L10n.text("混合输出", "Mixed Output"))
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(ConsoleTheme.text)
-            Text(L10n.text("发送给豆包", "Sent to Doubao"))
+            Text(model.voiceInputTool == .typeless ? "Typeless" : L10n.text("发送给豆包", "Sent to Doubao"))
                 .font(.system(size: 13))
                 .foregroundStyle(ConsoleTheme.secondary)
                 .padding(.top, 4)
@@ -1520,7 +1568,9 @@ private struct OutputChannelView: View {
             .padding(.top, 25)
             Text(outputError
                 ? L10n.text("等待音频链路恢复", "Waiting for audio route")
-                : L10n.text("豆包正在接收", "Doubao is receiving"))
+                : model.voiceInputTool == .typeless
+                    ? L10n.text("请在 Typeless 选择此麦克风", "Select this microphone in Typeless")
+                    : L10n.text("豆包正在接收", "Doubao is receiving"))
                 .font(.system(size: 11))
                 .foregroundStyle(outputError ? ConsoleTheme.red : ConsoleTheme.secondary)
                 .padding(.top, 15)
@@ -1535,7 +1585,7 @@ private struct OutputChannelView: View {
     }
 
     private var outputError: Bool {
-        !model.driverAvailable || (model.doubaoIsRecording && !model.doubaoUsesVRemote)
+        !model.driverAvailable || (model.voiceInputTool.observesDoubao && model.doubaoIsRecording && !model.doubaoUsesVRemote)
     }
 }
 
