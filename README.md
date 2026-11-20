@@ -2,13 +2,13 @@
 
 把蓝牙语音遥控器变成 Mac 的语音麦克风与快捷键控制器，方便在 Codex 等工具中进行 Vibe Coding。
 
-本项目 fork 自 [VincentKingHsu/vRemoter](https://github.com/VincentKingHsu/vRemoter)，定制开发位于 [`feat/chromecast-typeless`](https://github.com/nettee/vRemoter/tree/feat/chromecast-typeless)。当前版本：**1.2.3-typeless.5**。改动记录见 [CHANGELOG.md](CHANGELOG.md)。
+本项目 fork 自 [VincentKingHsu/vRemoter](https://github.com/VincentKingHsu/vRemoter)，定制开发位于 [`feat/chromecast-typeless`](https://github.com/nettee/vRemoter/tree/feat/chromecast-typeless)。当前版本：**1.2.3-typeless.6**。改动记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 第一次安装或迁移到另一台电脑，请按[新 Mac 安装与 Typeless 接入手册](docs/guides/new-mac-typeless.md)操作。
 
 ## 语音输入
 
-1. 安装原项目的虚拟麦克风驱动 `vRemoteDriver.driver`。已安装的用户无需替换驱动。
+1. 从 [Releases](https://github.com/nettee/vRemoter/releases/tag/v1.2.3-typeless.6) 下载 Apple 芯片版独立 PKG 并安装。它同时安装定制 App 与虚拟麦克风驱动，无需原版 vRemoter 或 BlackHole。
 2. 通过 macOS 蓝牙设置配对 Chromecast Voice Remote，启动 vRemoter，并授予麦克风、辅助功能、输入监控和蓝牙权限。
 3. 在“按键映射 → 语音工具”选择 **Typeless**，触发键设为 **Fn / Globe**；在 Typeless 中添加同一个点按开始／结束快捷键。可以保留原来的右 Command 快捷键。
 4. 在 Typeless 中选择 **vRemoteDr 2ch** 作为麦克风。
@@ -56,12 +56,15 @@ Mac 麦克风开关打开时，电脑音频也会送入虚拟麦克风，包括�
 ```sh
 swift run --disable-sandbox vRemote --voice-session-self-test
 zsh Scripts/run-self-tests.sh
-zsh Scripts/package-app.sh
+zsh Scripts/build-pkg.sh
+zsh Scripts/test-package.sh
 ```
 
-产物为 `dist/build/vRemote.app`。构建脚本使用本地 ad-hoc 签名，尚未进行 Developer ID 签名与公证。已有驱动时仅需更新 App；驱动构建与分发限制见 [Driver/README.md](Driver/README.md) 和 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+独立安装包为 `dist/vRemoter-1.2.3-typeless.6-AppleSilicon.pkg`，包括 `dist/build/vRemote.app` 与从仓库内源码构建的 HAL 驱动。构建和目标机器均无需安装原版或 BlackHole。需要 Apple 开发工具；首次 App 构建需要联网获取 SwiftPM 依赖。
 
-更新源指向本 fork 的 GitHub Releases；不会从上游下载应用覆盖定制版。仓库有源码不代表已经发布可下载的 Release。
+App 与驱动使用本地 ad-hoc 签名，安装包尚未进行 Developer ID 签名与公证。首次打开可能需要在系统隐私与安全性设置中由用户确认。安装需要管理员授权，并会短暂重启音频服务。
+
+驱动源码、许可和构建说明见 [Driver/README.md](Driver/README.md) 与 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。Release 随附对应驱动源码压缩包和 SHA-256 校验文件。更新源指向本 fork 的 GitHub Releases。
 
 ## 源码与历史
 

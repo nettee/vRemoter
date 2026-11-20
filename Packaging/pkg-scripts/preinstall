@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+# Stop any previous App before Installer replaces its executable. No previous App is required.
+if [ "${3:-/}" = "/" ] && /usr/bin/pgrep -x vRemote >/dev/null; then
+  /usr/bin/pkill -TERM -x vRemote
+fi

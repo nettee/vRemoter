@@ -1,78 +1,65 @@
 # 新 Mac 安装手册：Chromecast 遥控器接入 Typeless
 
-更新日期：2026-11-20。适用定制版：`1.2.3-typeless.5`。
+更新日期：2026-11-20。适用定制版：`1.2.3-typeless.6`。
 
 目标：按一下遥控器语音键，松手说话，再按一下结束出字；也能按住说话、松开结束。电脑原有 Typeless 快捷键可以继续使用。
 
 ## 1. 准备什么
 
 - 一台 Apple 芯片 Mac（M 系列），拥有管理员验证权限。
-- Chromecast Voice Remote，装好电池。已实测型号为 `18D1:9450`、固件 `26.5`；不是 Chromecast 投屏接收器，也不需要把投屏器接到电脑上。
-- Typeless 账号、网络连接。
-- 原版驱动安装包和本 fork 的定制 App，二者都需要。
+- Chromecast Voice Remote，装好电池。已实测型号为 `18D1:9450`、固件 `26.5`；不需要把 Chromecast 投屏器接到电脑。
+- Typeless 账号和网络连接。
+- 本 fork 的独立安装包：**`vRemoter-1.2.3-typeless.6-AppleSilicon.pkg`**。
 
-当前提供的 `.5.zip` 中 App 为 **arm64**，不能直接用于 Intel Mac。项目声明最低 macOS 12，但完整链路仅在 M4 Pro、macOS 15.7.1、Typeless 2.11.0 上实测；其他系统还需满足所安装 Typeless 版本的要求。源码可在目标机器构建，不代表 Intel 已实测可用。
+**只安装这个定制 PKG 即可，它同时安装 App 和虚拟麦克风驱动。不需要原版 vRemoter，不需要单独安装 BlackHole，也不需要 Xcode。** Typeless 需要另外从官网下载。
 
-### 获取文件
+该 PKG 限制 Apple 芯片和 macOS 12+。完整语音链路此前在 M4 Pro、macOS 15.7.1、Typeless 2.11.0 上实测；其他系统仍需满足所安装 Typeless 版本的要求。Intel Mac 不在本安装包的支持范围内。
 
-| 文件 | 用途 | 获取方式 |
-| --- | --- | --- |
-| `vRemoter-1.2.3.pkg` | 首次安装虚拟麦克风驱动，同时会安装原版 App | [上游原版 PKG](https://updates.vincentstudio.org/vremoter/vRemoter-1.2.3.pkg) |
-| `vRemoter-1.2.3-typeless.5.zip` | 替换为本 fork 的 Typeless 定制 App；不含驱动 | 从原电脑通过隔空投送／文件复制取得本次构建包；也可按文末说明自行构建 |
-| Typeless macOS 安装包 | 语音识别与文字输入 | [Typeless 官方下载](https://www.typeless.com/downloads) |
+### 下载
 
-原电脑留存的 `vRemoter-1.2.3-verified.pkg` 与表中的原版 PKG 内容相同，仅文件名不同。
+- [定制版 Release](https://github.com/nettee/vRemoter/releases/tag/v1.2.3-typeless.6)：下载 `.pkg` 和 `SHA256SUMS.txt`。
+- [Typeless 官方下载](https://www.typeless.com/downloads)：下载 macOS 版。
 
-**本 fork 已推送源码，但截至本手册日期未发布 `.5` 的 GitHub Release 附件。** 不要把 GitHub 的“Download ZIP”源码压缩包当成可安装 App，也不要假定 Releases 页面已有安装包。
+GitHub 的“Download ZIP”是源码，不是安装包。Release 中的 `vRemoteDriver-source-…tar.gz` 是驱动源码，只用于审阅和自行构建，普通安装不需要解压它。
 
-可在终端核对 SHA-256，例如先输入 `shasum -a 256 `，再将下载文件拖进终端并回车：
-
-| 文件 | 本次核验的 SHA-256 |
-| --- | --- |
-| 原版 `1.2.3.pkg` | `d59be08ab10b3293d1f23eb8cf2ba454af4dd7e9cf353062d7135c46ccb938ba` |
-| 本次构建 `.5.zip` | `5593703d5f218dac3fd476843bcaad982e5e2f685d9f5d1ff53892cc7e1625ed` |
-
-这两个校验值只适用于上述文件；重新构建或重新压缩的 ZIP 可能不同。原版 PKG 信息来自[上游版本清单](https://updates.vincentstudio.org/vremoter/releases.json)。
+可在终端输入 `shasum -a 256 `，拖入 PKG 后回车，将输出与该 Release 的 `SHA256SUMS.txt` 核对。
 
 ## 2. 安装 Typeless，先确认电脑本身能出字
 
 1. 打开 Typeless DMG，将 App 拖到“应用程序”，从那里启动并登录。
-2. 按提示授权 Typeless 的“麦克风”和“辅助功能”。可在“系统设置 → 隐私与安全性”中核对。
-3. 暂时使用 Typeless 的自动检测／电脑麦克风，打开备忘录或文本编辑器。
-4. 用 Typeless 的键盘快捷键说一句话，确认电脑麦克风可以正常出字。
+2. 按提示授权 Typeless 的“麦克风”和“辅助功能”，可在“系统设置 → 隐私与安全性”核对。
+3. 暂时使用自动检测／电脑麦克风，在备忘录或文本编辑器里用 Typeless 键盘快捷键说一句话。
+4. 确认电脑本身可以出字，再继续接入遥控器。
 
-这一步失败时先解决 Typeless 本身的登录、权限或收音问题，再继续接遥控器。[Typeless 官方安装说明](https://www.typeless.com/help/installation-and-setup)
+[Typeless 官方安装说明](https://www.typeless.com/help/installation-and-setup)
 
-## 3. 安装虚拟麦克风驱动
+## 3. 直接安装定制版 PKG
 
-1. 结束正在进行的通话、录音等工作。原版 PKG 安装会重启系统音频服务，声音可能短暂中断。
-2. 双击原版 `vRemoter-1.2.3.pkg`，按安装器提示完成管理员验证。
-3. 安装完成后，原版 vRemoter 可能自动打开。通过其菜单栏菜单选择“退出”，暂时不要配置原版语音功能。
-4. 在“系统设置 → 声音 → 输入”中检查是否出现 **`vRemoteDr 2ch`**。此时只需确认设备存在，不必把它设为系统默认输入。
+1. 结束当前通话、录音等工作，安装会短暂重启系统音频服务。
+2. 双击 **`vRemoter-1.2.3-typeless.6-AppleSilicon.pkg`**。
+3. 在安装器中继续，选择安装到这台电脑，为所有用户安装。
+4. 完成 macOS 的管理员／触控 ID 验证，等待安装器显示安装成功。
+5. 安装器会尝试启动 App；如未自动打开，从“应用程序”中启动 **vRemote**。
 
-安装后的驱动目录是：
+安装位置：
 
 ```text
+/Applications/vRemote.app
 /Library/Audio/Plug-Ins/HAL/vRemoteDriver.driver
 ```
 
-如果列表里没有设备，先重启 Mac，再检查。如果仍没有，确认装的是含驱动的 **PKG**，不是仅含 App 的 ZIP／DMG。
+当前 App 和驱动使用本地 ad-hoc 签名，PKG 未进行 Developer ID 签名及公证。macOS 如阻止打开，核对来源和校验值后，由你在“系统设置 → 隐私与安全性”中按提示允许该文件打开。不要关闭系统安全检查；如果系统报告文件损坏或恶意内容，先停止并核对文件。
 
-**只有 App 不够；只安装普通 BlackHole 也不等于安装了 `vRemoteDr 2ch`。** 本 fork 使用这个专用设备名称和标识。
+新 Mac 不需要先装任何旧版。已有用户也可运行同一个 PKG 升级；安装会替换上述固定路径的 App 与驱动，保留偏好设置。如果以前另存过 `vRemote-Typeless.app`，升级后只运行新安装的 `vRemote.app`，并检查登录自启指向的副本，避免启动旧版。
 
-## 4. 把原版 App 替换为 Typeless 定制版
+## 4. 确认 App 和驱动都就绪
 
-1. 确认原版 vRemoter 已退出。
-2. 解压 `vRemoter-1.2.3-typeless.5.zip`，得到 **`vRemote.app`**。
-3. 在访达中把它拖到“应用程序”，替换原版 `/Applications/vRemote.app`，按需完成管理员验证。
-4. 从“应用程序”启动替换后的 App。
-5. 查看控制台版本号，必须显示 **`1.2.3-typeless.5`**。显示 `1.2.3` 代表仍打开了原版。
+1. 打开 vRemoter 控制台，版本号应显示 **`1.2.3-typeless.6`**。
+2. 在控制台检查驱动状态：应显示 **vRemoteDr 2ch 可用**。
+3. 在“系统设置 → 声音 → 输入”确认存在 **`vRemoteDr 2ch`**。只需确认存在，不必改变系统默认麦克风。
+4. 如果 Typeless 安装前就已打开，重新打开它，再选择新出现的虚拟麦克风。
 
-也可以把定制 App 命名为 `vRemote-Typeless.app` 再放进“应用程序”，但应只运行一个 vRemote 实例，并关闭原版的登录自启。为减少新手混淆，本手册推荐直接替换原版路径。
-
-当前构建使用本地 ad-hoc 签名，未进行 Developer ID 公证。如 macOS 阻止打开，核对来源和文件校验值后，由你在“系统设置 → 隐私与安全性”中按系统提示允许该文件打开。不要关闭整个系统的安全检查；如果系统将文件报告为损坏或恶意内容，停止并重新核对文件。
-
-安装位置固定之后再授权，避免先从下载目录运行，之后又移动 App，导致权限指向旧副本。
+如没有设备，先重启 Mac 再检查。仍未出现时，重新运行本 fork 的独立 PKG 修复安装；不要改装原版。App 单独复制、源码 ZIP 或普通 BlackHole 不能替代这个安装包中的专用驱动。
 
 ## 5. 把遥控器配对到这台 Mac
 
@@ -113,7 +100,7 @@ Google 的[官方说明](https://support.google.com/chromecast/answer/10109990?h
 | 遥控器模式 | **点按免持／按住说话** |
 | 触发键 | **Fn / Globe** |
 
-在“音频”页让 **MacBook 麦克风**和**遥控器麦克风**两个开关都打开。新安装 `.5` 默认使用上述工具、模式和触发键，但仍建议核对。
+在“音频”页让 **MacBook 麦克风**和**遥控器麦克风**两个开关都打开。新安装 `.6` 默认使用上述工具、模式和触发键，但仍建议核对。
 
 ### Typeless 设置
 
@@ -174,7 +161,7 @@ Google 的[官方说明](https://support.google.com/chromecast/answer/10109990?h
 
 | 现象 | 按顺序检查 |
 | --- | --- |
-| 没有 `vRemoteDr 2ch` | 是否安装了原版 PKG；检查驱动目录；重启 Mac 后重新打开 Typeless |
+| 没有 `vRemoteDr 2ch` | 是否安装了本 fork 的独立 PKG；检查驱动目录；重启 Mac 后重新打开 Typeless |
 | 语音键一两秒就停、没有出字 | 先核对定制版版本号、语音工具是否为 Typeless；不要误运行原版或旧版本 |
 | Typeless 不启动，或只开出系统菜单 | 两边触发键是否均为 Fn；Typeless 是否添加在 Dictate；辅助功能与输入监控是否授权；检查系统 Fn 功能或其他快捷键软件是否冲突 |
 | Typeless 启动，但录不到声音 | Typeless 是否选了虚拟麦克风；vRemoter 是否运行；遥控器音源开关是否打开；BLE 是否就绪 |
@@ -206,32 +193,28 @@ Google 的[官方说明](https://support.google.com/chromecast/answer/10109990?h
 
 验收完成后，可分别在 vRemoter 菜单和 Typeless 设置中开启登录自启。先运行 vRemoter，再使用已选虚拟麦克风的 Typeless。
 
-更新时只替换定制 App，通常无需重装驱动。本 fork 的更新源指向自己的 GitHub Releases，但没有发布附件时，仍应手动复制新 App 或自行构建。不要重新运行原版 PKG 覆盖已装好的定制 App，除非确实需要修复驱动并准备再次替换 App。
+后续升级优先使用本 fork 新版独立 PKG，它会更新 App 和驱动。不要重新安装原版来覆盖定制 App。更新源指向本 fork 的 GitHub Releases。
 
-## 附录：没有定制 ZIP 时，从源码构建 App
+## 附录：自行从源码构建独立安装包
 
-这条路线用于能使用终端的用户。**先完成第 3 节驱动安装**；只运行 App 构建脚本不会安装驱动。
-
-1. 安装 Xcode Command Line Tools，等待系统安装完成：
+普通用户下载 Release PKG 即可。下面仅供需要构建的人使用：构建机安装 Apple 开发工具，App 的 SwiftPM 依赖首次需要联网；驱动源码已随仓库提供，不读取本机已安装的 BlackHole 或旧版驱动。
 
 ```sh
 xcode-select --install
 ```
 
-2. 在终端中克隆代码并构建本手册对应版本：
+等待工具安装完成，再逐条运行（失败即停止，不安装不完整产物）：
 
 ```sh
 git clone https://github.com/nettee/vRemoter.git
 cd vRemoter
-git checkout 87cfcb34bb0056b41c67a5da77ad69169b592d21
-swift --version
+git checkout v1.2.3-typeless.6
 swift run --disable-sandbox vRemote --voice-session-self-test
 zsh Scripts/run-self-tests.sh
-zsh Scripts/package-app.sh
+zsh Scripts/build-pkg.sh
+zsh Scripts/test-package.sh
 ```
 
-这里固定提交以复现 `.5` 的代码。要使用后续版本，应先看对应 changelog。每条检查或构建命令成功后再继续；失败就停止，保留报错，不要安装不完整产物。首次构建需要网络下载 SwiftPM 依赖。
+产物为 `dist/vRemoter-1.2.3-typeless.6-AppleSilicon.pkg`。`build-pkg.sh` 会同时构建 App、源码驱动，检查驱动音频环回，然后封装为一个安装包。安装这个产物即可，无需另装旧版。
 
-3. 构建成功后的 App 位于 `dist/build/vRemote.app`。按第 4 节退出原版、复制 App 到“应用程序”，再继续权限与 Typeless 配置。
-
-不要把 `Scripts/build-pkg.sh` 当作新 Mac 的第一步：它额外依赖本机已安装的 `BlackHole2ch.driver`，驱动构建目前为二进制修改方案。普通安装路线应使用前面已核验的原版驱动 PKG。
+驱动 GPL 源码、修改说明和构建方法见 [Driver/README.md](../../Driver/README.md)。
