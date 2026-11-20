@@ -4,6 +4,8 @@
 
 本项目 fork 自 [VincentKingHsu/vRemoter](https://github.com/VincentKingHsu/vRemoter)，定制开发位于 [`feat/chromecast-typeless`](https://github.com/nettee/vRemoter/tree/feat/chromecast-typeless)。当前版本：**1.2.3-typeless.5**。改动记录见 [CHANGELOG.md](CHANGELOG.md)。
 
+第一次安装或迁移到另一台电脑，请按[新 Mac 安装与 Typeless 接入手册](docs/guides/new-mac-typeless.md)操作。
+
 ## 语音输入
 
 1. 安装原项目的虚拟麦克风驱动 `vRemoteDriver.driver`。已安装的用户无需替换驱动。
