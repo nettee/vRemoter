@@ -2,6 +2,8 @@
 
 ## v1.2.3-typeless.6 · 2026-11-20
 
+- 实机验证独立 PKG 升级安装成功，系统 CoreAudio 音频环回、安装产物一致性、HID/BLE 连接与权限保留均通过。
+
 - 发布 Apple 芯片 Mac 独立 PKG：同时安装 Typeless 定制 App 和虚拟麦克风驱动，首次安装无需原版 vRemoter 或 BlackHole。
 - 驱动改为从仓库内 BlackHole 0.4.1 派生源码编译，替换依赖已安装 BlackHole 的二进制修改流程；保留设备名称、UID、工厂标识与传输类型，兼容已有配置。
 - 随安装包提供 GPL 许可，并随 Release 提供完整对应驱动源码与构建脚本。
