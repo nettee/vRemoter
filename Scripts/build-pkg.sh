@@ -7,7 +7,7 @@ PAYLOAD="$ROOT/dist/pkg-root"
 COMPONENT="$ROOT/dist/vRemoter-component.pkg"
 FINAL="$ROOT/dist/vRemoter-$VERSION-AppleSilicon.pkg"
 zsh "$ROOT/Scripts/package-app.sh"
-lipo -verify_arch arm64 "$ROOT/dist/build/vRemote.app/Contents/MacOS/vRemote"
+lipo "$ROOT/dist/build/vRemote.app/Contents/MacOS/vRemote" -verify_arch arm64
 zsh "$ROOT/Driver/build-driver.sh"
 zsh "$ROOT/Scripts/test-driver.sh"
 rm -rf "$PAYLOAD" "$COMPONENT" "$FINAL"

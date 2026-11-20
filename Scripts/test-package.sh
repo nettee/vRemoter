@@ -25,7 +25,7 @@ with tempfile.TemporaryDirectory(prefix='vremoter-package-test-') as temp:
         assert bundle_info['CFBundleIdentifier'] == identifier
         subprocess.run(['codesign','--verify','--deep','--strict',str(bundle)],check=True)
     assert plistlib.loads((app/'Contents/Info.plist').read_bytes())['CFBundleShortVersionString'] == version
-    subprocess.run(['lipo','-verify_arch','arm64',str(app/'Contents/MacOS/vRemote')],check=True)
+    subprocess.run(['lipo',str(app/'Contents/MacOS/vRemote'),'-verify_arch','arm64'],check=True)
     assert (driver/'Contents/Resources/LICENSE.txt').read_bytes() == (root/'Driver/BlackHole/LICENSE').read_bytes()
     assert not (app/'Contents/Resources/BuyMeACoffee').exists()
     for script in ('preinstall','postinstall'):
