@@ -138,6 +138,7 @@ enum VoiceSessionSelfTest {
         testTypelessWithoutDoubao(checks)
         testTypelessLongPress(checks)
         testTypelessKeyboardClose(checks)
+        testTypelessKeyboardDoesNotOpenRemote(checks)
         testTypelessDisconnect(checks)
         testTypelessUnavailableTransport(checks)
         testTypelessConfigurationChange(checks)
@@ -330,6 +331,23 @@ enum VoiceSessionSelfTest {
         RunLoop.current.run(until: Date().addingTimeInterval(0.2))
         c.expect(h.triggerTapCount == 1, "physical Fn stop is not replayed")
         c.expect(h.coordinator.debugSnapshot.phase == "closed", "keyboard can stop Typeless despite unrelated Doubao recording")
+        c.expect(h.routeChanges.last == false, "keyboard takeover selects computer audio")
+        let requests = h.openRequests.count
+        h.coordinator.remoteAudioStarted(remote: .chromecast, reason: 0x00)
+        RunLoop.current.run(until: Date().addingTimeInterval(0.3))
+        c.expect(h.coordinator.debugSnapshot.phase == "closed", "late host audio cannot reclaim keyboard route")
+        c.expect(h.openRequests.count == requests, "keyboard takeover cancels remote reopen work")
+    }
+
+    private static func testTypelessKeyboardDoesNotOpenRemote(_ c: CheckContext) {
+        let h = Harness(initialState: .unavailable, tool: .typeless)
+        for _ in 0..<4 {
+            h.coordinator.triggerDownObserved(isSynthetic: false)
+            h.coordinator.triggerUpObserved(isSynthetic: false)
+        }
+        c.expect(h.openRequests.isEmpty, "physical keyboard never opens remote in Typeless mode")
+        c.expect(h.triggerTapCount == 0, "physical keyboard is never synthetically replayed")
+        c.expect(h.coordinator.debugSnapshot.phase == "closed", "computer dictation leaves remote session closed")
     }
 
     private static func testTypelessDisconnect(_ c: CheckContext) {

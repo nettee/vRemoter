@@ -1,5 +1,23 @@
 # vRemoter 发布与运营手册
 
+## 本 fork：GitHub Releases 发布（2026-11-21）
+
+`nettee/vRemoter` 从 GitHub Releases API 检查更新（`Packaging/Info.plist` 的 `VRReleasesURL`），不使用上游服务器清单。当前正式版本为 `1.2.3-typeless.7`，构建号 131。以下流程取代本文后续上游服务器发布检查表；后续章节仅作历史归档，不代表本 fork 管理或部署了这些服务。
+
+1. 同步 `VERSION`、`Packaging/Info.plist` 的版本与递增构建号，以及 `CHANGELOG.md`、README、迁移手册、`docs/index.html` 的版本和使用说明。
+2. 执行 `swift run --disable-sandbox vRemote --audio-routing-self-test`、`swift run --disable-sandbox vRemote --voice-session-self-test`、`zsh Scripts/run-self-tests.sh`。
+3. 执行 `zsh Scripts/build-pkg.sh`、`zsh Scripts/test-package.sh`；驱动未变时另执行 `zsh Scripts/build-dmg.sh`，并挂载检查 DMG 内 App 的版本、签名与二进制。
+4. 提交明确的源码／文档白名单并推送。针对该提交生成完整驱动源码归档，至少包含 `Driver/`（排除 build）、`Scripts/test-driver.sh`、`SelfTests/driver-smoke.c`、`THIRD_PARTY_NOTICES.md` 和 `VERSION`。在空目录解包并验证驱动可重建和通过环回检查。
+5. 对 PKG、DMG 和驱动源码归档生成 `SHA256SUMS.txt`。创建带这些附件的 GitHub draft release，确认附件、目标提交及校验值后再发布，`draft=false`、`prerelease=false`，设为 Latest。不要覆盖已有版本资产。
+6. Tag 必须指向包含对应代码和 changelog 的提交；发布后通过 GitHub API 核对 tag、目标提交、附件名称／大小／摘要和 Latest 状态。App-only DMG 仅供已有本 fork 专用驱动的用户；新安装或驱动缺失使用独立 PKG。
+7. 源码测试与实机验收分开记录。`.7` 的收音实现已在本机预发布版完成 3 轮交替口述共 6 段正常；正式 `.7` PKG 随后在本机完成实际升级，核对了版本、二进制、权限和 HID/BLE；不得把预发布版口述验收写成正式包重新进行了同一轮口述。Developer ID 签名／公证尚未完成，必须保留说明。
+
+`Server/releases.json` 为上游历史归档，不能作为本 fork 的当前下载清单；本 fork 的更新元数据以 [GitHub Releases API](https://api.github.com/repos/nettee/vRemoter/releases) 为准。无需上传上游服务器 ZIP、修改上游 DNS／SSH 服务或同步 Obsidian 状态。
+
+---
+
+## 上游发布与运营手册（历史归档）
+
 此文档是长期可复用的开发与发布操作单，不部署到公开官网。
 
 ## 1. 固定架构

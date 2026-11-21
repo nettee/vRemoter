@@ -4,9 +4,9 @@
 //                                             ├-> aligned equal mix -> vRemoteDr 2ch
 // X6 ATVV ADPCM -> decoded Int16 PCM --------┘
 //
-// Both microphones are peers. Neither source permanently wins or ducks the
-// other. The Mac path is delayed slightly to compensate for BLE transport
-// latency, then the two available signals are averaged and hard-limited.
+// Typeless uses one source at a time: a remote session owns the remote input;
+// otherwise the computer shortcut receives only the Mac input. Doubao retains
+// its legacy dual-input mix.
 
 import AVFoundation
 import AudioToolbox
@@ -15,7 +15,7 @@ import CoreMedia
 import Foundation
 
 final class AudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
-    static let shared = AudioPipe()
+    static let shared = AudioPipe(startHardware: true)
 
     private enum InputSource {
         case mac
@@ -76,8 +76,9 @@ final class AudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
     private var macLevelAt = Date.distantPast
     private var captureConfigured = false
 
-    private override init() {
+    private init(startHardware: Bool) {
         super.init()
+        guard startHardware else { return }
 
         if let deviceID = Self.findOutputDevice(named: Self.targetDeviceName) {
             startOutputDevice(deviceID)
@@ -115,14 +116,13 @@ final class AudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
         )
     }
 
-    /// Kept under the V1 method name so the proven X6 session state machine
-    /// remains unchanged. In vRemote, `active` means that the dual-input mix
-    /// is open; it no longer selects one microphone over another.
+    /// In Typeless mode a remote session exclusively owns the virtual input.
+    /// Never substitute the Mac if the selected remote is muted or delayed.
     func setRemoteActive(_ active: Bool) {
         stateLock.lock()
         let changed = mixActive != active
         mixActive = active
-        clearPendingBuffersLocked()
+        if changed { clearPendingBuffersLocked() }
         if active, changed {
             remoteSessionScheduledBuffers = 0
             remoteSessionRenderedFrames = 0
@@ -132,7 +132,9 @@ final class AudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
 
         guard changed else { return }
         print(
-            active
+            macPassthroughEnabled
+                ? "[AUDIO-ROUTE] source=\(active ? "remote" : "computer") exclusive=true"
+                : active
                 ? "[AUDIO] 双麦克风混音开启 · X6 + MacBook · Mac 对齐延迟 120ms"
                 : "[AUDIO] 双麦克风混音关闭"
         )
@@ -173,6 +175,7 @@ final class AudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
 
     var isMacInputEnabled: Bool { inputState.macEnabled }
     var isRemoteInputEnabled: Bool { inputState.remoteEnabled }
+    var isRemoteRouteActive: Bool { inputState.mixActive }
     var isOutputDeviceAvailable: Bool { outputDeviceID != nil }
 
     func setVoiceInputTool(_ tool: VoiceInputTool) {
@@ -388,7 +391,12 @@ final class AudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
 
         stateLock.lock()
         let sourceEnabled = source == .mac ? macInputEnabled : remoteInputEnabled
-        let sourceActive = mixActive || (source == .mac && macPassthroughEnabled)
+        let sourceActive: Bool
+        if macPassthroughEnabled {
+            sourceActive = source == .remote ? mixActive : !mixActive
+        } else {
+            sourceActive = mixActive
+        }
         guard sourceActive, sourceEnabled else {
             stateLock.unlock()
             return
@@ -516,7 +524,9 @@ final class AudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
             }
 
             let macAvailable = pendingMac.count - pendingMacIndex
-            let macReady = max(0, macAvailable - Self.macAlignmentDelayFrames)
+            let macReady = macPassthroughEnabled && mixActive
+                ? 0
+                : max(0, macAvailable - Self.macAlignmentDelayFrames)
             if macReady > 0 {
                 macTaken = min(frameCount, macReady)
                 mac.replaceSubrange(
@@ -687,3 +697,69 @@ final class AudioPipe: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
         }
     }
 }
+
+#if DEBUG
+extension AudioPipe {
+    /// Exercises the production queues and render callback without opening devices.
+    static func runRoutingSelfTest() -> Bool {
+        var failures = 0
+        func expect(_ condition: Bool, _ message: String) {
+            Swift.print("[AUDIO-TEST] \(condition ? "PASS" : "FAIL") \(message)")
+            if !condition { failures += 1 }
+        }
+        let pipe = AudioPipe(startHardware: false)
+        pipe.macInputEnabled = true
+        pipe.remoteInputEnabled = true
+        pipe.setVoiceInputTool(.typeless)
+        func enqueue(mac: Float?, remote: Float?) {
+            if let mac {
+                pipe.schedule(monoSamples: Array(repeating: mac, count: macAlignmentDelayFrames + 512),
+                              sampleRate: outputSampleRate, source: .mac)
+            }
+            if let remote {
+                pipe.schedule(monoSamples: Array(repeating: remote, count: 512),
+                              sampleRate: outputSampleRate, source: .remote)
+            }
+        }
+        func output() -> Float {
+            let samples = UnsafeMutablePointer<Float>.allocate(capacity: 1024)
+            samples.initialize(repeating: 0, count: 1024)
+            defer { samples.deinitialize(count: 1024); samples.deallocate() }
+            var buffers = AudioBufferList(mNumberBuffers: 1, mBuffers: AudioBuffer(
+                mNumberChannels: 2, mDataByteSize: 4096, mData: samples))
+            withUnsafeMutablePointer(to: &buffers) { pipe.render($0) }
+            expect((0..<1024).allSatisfy { abs(samples[$0] - samples[0]) < 0.0001 },
+                   "rendered block has one consistent source on both channels")
+            return samples[0]
+        }
+        enqueue(mac: 0.5, remote: nil)
+        pipe.setRemoteActive(false)
+        expect(abs(output() - 0.5) < 0.0001, "repeated computer selection preserves pending speech")
+        for _ in 0..<20 {
+            pipe.setRemoteActive(false)
+            enqueue(mac: 0.5, remote: 0.125)
+            expect(abs(output() - 0.5) < 0.0001, "computer route rejects remote samples")
+            pipe.setRemoteActive(true)
+            enqueue(mac: 0.5, remote: 0.125)
+            expect(abs(output() - 0.125) < 0.0001, "remote route rejects computer samples")
+            pipe.setRemoteActive(true)
+            enqueue(mac: 0.5, remote: nil)
+            expect(output() == 0, "missing remote audio never falls back to computer")
+        }
+        pipe.remoteInputEnabled = false
+        enqueue(mac: 0.5, remote: 0.125)
+        expect(output() == 0, "muted remote never falls back to computer")
+        pipe.setRemoteActive(false)
+        pipe.macInputEnabled = false
+        enqueue(mac: 0.5, remote: 0.125)
+        expect(output() == 0, "muted computer never falls back to remote")
+        pipe.macInputEnabled = true
+        pipe.remoteInputEnabled = true
+        pipe.setVoiceInputTool(.doubao)
+        pipe.setRemoteActive(true)
+        enqueue(mac: 0.5, remote: 0.125)
+        expect(abs(output() - 0.3125) < 0.0001, "legacy Doubao mixing remains available")
+        return failures == 0
+    }
+}
+#endif

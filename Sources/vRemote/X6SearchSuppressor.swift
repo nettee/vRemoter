@@ -148,7 +148,8 @@ final class X6SearchSuppressor {
         // microphone transition twice.
         guard !isSynthetic else { return }
         let trigger = AppStorage.inputTriggerKey
-        guard trigger.keyCodes.contains(keyCode) else { return }
+        let isComputerCommand = AppStorage.voiceInputTool == .typeless && keyCode == 0x36
+        guard trigger.keyCodes.contains(keyCode) || isComputerCommand else { return }
 
         // macOS normally reports modifier edges as `flagsChanged`, but on
         // some keyboards/input-method paths the DOWN edge arrives as a plain
@@ -168,7 +169,8 @@ final class X6SearchSuppressor {
             if triggerKeysDown.contains(keyCode) {
                 isDown = false
             } else {
-                guard event.flags.contains(trigger.flag) else {
+                let flag: CGEventFlags = isComputerCommand ? .maskCommand : trigger.flag
+                guard event.flags.contains(flag) else {
                     print(
                         "[OPTION-RAW] orphan UP ignored keyCode=0x" +
                         String(keyCode, radix: 16)

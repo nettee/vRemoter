@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark">
-  <meta name="description" content="让 X6 与 Chromecast Voice Remote 变成 Mac 的语音麦克风与快捷键：对着遥控器说话就行，电视按键也能变成你要的 Mac 操作。vRemoter turns supported Bluetooth voice remotes into a dual-microphone voice input and programmable macOS controller for Typeless.">
+  <meta name="description" content="让 X6 与 Chromecast Voice Remote 变成 Mac 的语音麦克风与快捷键：对着遥控器说话就行，电视按键也能变成你要的 Mac 操作。vRemoter turns supported Bluetooth voice remotes into a source-exclusive voice input and programmable macOS controller for Typeless.">
   <title>vRemoter · 把遥控器变成你的麦克风和快捷键</title>
   <link rel="icon" href="assets/brand/vremoter-logo.png">
   <link rel="stylesheet" href="styles.css">
@@ -17,7 +17,7 @@
       <a href="#actions" data-zh="系统动作" data-en="System Actions">系统动作</a>
       <a href="#setup" data-zh="设置" data-en="Setup">设置</a>
       <a href="#release" data-zh="本次更新" data-en="What’s New">本次更新</a>
-      <a href="https://github.com/nettee/vRemoter/tree/feat/chromecast-typeless" target="_blank" rel="noopener" data-zh="GitHub 源码 ↗" data-en="GitHub Source ↗">GitHub 源码 ↗</a>
+      <a href="https://github.com/nettee/vRemoter/tree/main" target="_blank" rel="noopener" data-zh="GitHub 源码 ↗" data-en="GitHub Source ↗">GitHub 源码 ↗</a>
       <div class="language-switch" role="group" aria-label="Language"><button type="button" data-set-language="zh" class="active">中</button><button type="button" data-set-language="en">EN</button></div>
       <a class="download-button" href="https://github.com/nettee/vRemoter/releases" data-zh="GitHub Releases" data-en="GitHub Releases">GitHub Releases</a>
     </nav>
@@ -28,12 +28,12 @@
       <div class="aurora" aria-hidden="true"></div>
       <section class="hero section-inner">
       <div class="hero-copy">
-        <p class="eyebrow">vRemoter 1.2.3-typeless.6 · macOS</p>
+        <p class="eyebrow">vRemoter 1.2.3-typeless.7 · macOS</p>
         <h1 data-zh="沙发上的遥控器，帮你把话说完。" data-en="The remote on your sofa finishes your sentences for you.">沙发上的遥控器，帮你把话说完。</h1>
         <p class="lead" data-zh="手边的 X6 或 Chromecast Voice Remote，接上就能当你麦用——说话不用再凑近笔记本。顺手把电视上那些遥控键，换成你在 Mac 上真正想按的那几个。" data-en="Plug in the X6 or Chromecast Voice Remote you already own and it becomes your microphone—no more leaning toward the laptop. And the TV buttons on it turn into the Mac shortcuts you actually reach for.">手边的 X6 或 Chromecast Voice Remote，接上就能当你麦用——说话不用再凑近笔记本。顺手把电视上那些遥控键，换成你在 Mac 上真正想按的那几个。</p>
         <div class="hero-actions">
           <a class="primary-button" href="https://github.com/nettee/vRemoter/releases" data-zh="查看 Releases" data-en="View releases">查看 Releases</a>
-          <a class="secondary-link" href="https://github.com/nettee/vRemoter/tree/feat/chromecast-typeless" target="_blank" rel="noopener" data-zh="查看源码 ↗" data-en="View source ↗">查看源码 ↗</a>
+          <a class="secondary-link" href="https://github.com/nettee/vRemoter/tree/main" target="_blank" rel="noopener" data-zh="查看源码 ↗" data-en="View source ↗">查看源码 ↗</a>
         </div>
         <p class="system-note" data-zh="适用于 macOS 12 及以上版本，当前定制版主要配合 Typeless 使用。" data-en="macOS 12 or later. Chromecast + Typeless edition.">适用于 macOS 12 及以上版本，当前定制版主要配合 Typeless 使用。</p>
       </div>
@@ -118,7 +118,7 @@
         <div>
           <p class="eyebrow" data-zh="说话就行" data-en="Just speak">说话就行</p>
           <h2 data-zh="窝在沙发上，也不用挪到电脑前。" data-en="Stay on the sofa. No need to move to the desk.">窝在沙发上，也不用挪到电脑前。</h2>
-          <p data-zh="vRemoter 把遥控器和 MacBook 的麦克风合成一路输入，语音输入工具只会看到一支麦克风。触发键默认是 Fn，手顺的话，换成 Command、Control、Shift、Fn 都行。" data-en="vRemoter merges the remote and MacBook microphones into one input, so the voice input tool sees a single microphone. The trigger key defaults to Fn; switch it to Command, Control, Shift, or Fn if that feels more natural.">vRemoter 把遥控器和 MacBook 的麦克风合成一路输入，语音输入工具只会看到一支麦克风。触发键默认是 Fn，手顺的话，换成 Command、Control、Shift、Fn 都行。</p>
+          <p data-zh="Typeless 模式按触发键独占收音：遥控器语音键只用遥控器麦克风，电脑右 Command 或物理 Fn 只用电脑麦克风。Typeless 始终选择 vRemoteDr 2ch，控制台显示当前音源。" data-en="In Typeless mode the remote voice key selects only the remote microphone; physical Right Command or Fn selects only the Mac microphone. Keep vRemoteDr 2ch selected in Typeless and check the active source in the console.">Typeless 模式按触发键独占收音：遥控器语音键只用遥控器麦克风，电脑右 Command 或物理 Fn 只用电脑麦克风。Typeless 始终选择 vRemoteDr 2ch，控制台显示当前音源。</p>
         </div>
         <div class="voice-modes">
           <div><span>01</span><h3 data-zh="按一下开，再按一下关" data-en="Tap on, tap off">按一下开，再按一下关</h3><p data-zh="不用一直按着，想说完就说完。" data-en="No need to hold it down the whole time.">不用一直按着，想说完就说完。</p></div>
@@ -144,15 +144,15 @@
 
     <section class="section-inner release-section" id="release">
       <div class="release-copy">
-        <p class="eyebrow" data-zh="版本 1.2.3-typeless.6" data-en="Version 1.2.3-typeless.6">版本 1.2.3-typeless.6</p>
-        <h2 data-zh="一个按键，管起整台 Mac。" data-en="One button now runs your whole Mac.">一个按键，管起整台 Mac。</h2>
+        <p class="eyebrow" data-zh="版本 1.2.3-typeless.7" data-en="Version 1.2.3-typeless.7">版本 1.2.3-typeless.7</p>
+        <h2 data-zh="按哪个键，就用哪支麦克风。" data-en="Each trigger selects its own microphone.">按哪个键，就用哪支麦克风。</h2>
         <a class="primary-button inline-button" href="https://github.com/nettee/vRemoter/releases" data-zh="查看更新日志与下载" data-en="View release notes and downloads">查看更新日志与下载</a>
       </div>
       <ul class="release-list">
-        <li data-zh="新增系统级锁屏、睡眠、切换应用：任意按键都能指过去，看片累了按一下锁屏，起身倒水按一下睡眠" data-en="System-level lock, sleep, and app switching: assign any button you like">新增系统级锁屏、睡眠、切换应用：任意按键都能指过去，看片累了按一下锁屏，起身倒水按一下睡眠</li>
-        <li data-zh="切换应用和真键盘 ⌘Tab 手感一致：单击切上一个，连按逐个挑，停手一秒就落地" data-en="App switching feels exactly like ⌘Tab: tap once to go back, keep tapping to browse, pause one second to land">切换应用和真键盘 ⌘Tab 手感一致：单击切上一个，连按逐个挑，停手一秒就落地</li>
-        <li data-zh="双路麦克风的静音与独奏合并成一个拨动开关，开就是参与，关就是闭麦" data-en="The mute and solo buttons for both microphones are now one clear toggle each">双路麦克风的静音与独奏合并成一个拨动开关，开就是参与，关就是闭麦</li>
-        <li data-zh="支持 Typeless 点按免持与按住说话，保留电脑麦克风输入" data-en="Typeless tap-to-toggle and hold-to-talk, with Mac microphone passthrough">支持 Typeless 点按免持与按住说话，保留电脑麦克风输入</li>
+        <li data-zh="遥控器语音键独占遥控器麦克风，右 Command / 物理 Fn 独占电脑麦克风" data-en="Remote voice key uses only the remote mic; physical Right Command / Fn uses only the Mac mic">遥控器语音键独占遥控器麦克风，右 Command / 物理 Fn 独占电脑麦克风</li>
+        <li data-zh="电脑按键接管时关闭残留遥控器会话；所选音源断流时不回退到另一支麦克风" data-en="Keyboard takeover clears remote sessions; unavailable sources never fall back to the other microphone">电脑按键接管时关闭残留遥控器会话；所选音源断流时不回退到另一支麦克风</li>
+        <li data-zh="控制台显示当前独占音源，并保留尚未输出的语音缓冲" data-en="The console shows the selected source, and repeated selection preserves queued speech">控制台显示当前独占音源，并保留尚未输出的语音缓冲</li>
+        <li data-zh="提供 Apple Silicon 独立 PKG 和 App 更新 DMG；仍未进行 Developer ID 签名和公证" data-en="Standalone Apple Silicon PKG and app-only DMG update; not Developer ID signed or notarized">提供 Apple Silicon 独立 PKG 和 App 更新 DMG；仍未进行 Developer ID 签名和公证</li>
       </ul>
     </section>
 
@@ -161,7 +161,7 @@
   <footer>
     <div class="section-inner footer-inner">
       <div class="brand"><img src="assets/brand/vremoter-logo.png" alt=""><span>vRemoter</span></div>
-      <p>© 2026 Vincent Studio · <a href="https://vremoter.vincentstudio.org/">官网</a> · <a href="https://github.com/nettee/vRemoter/tree/feat/chromecast-typeless">GitHub 源码</a> · <a href="https://github.com/nettee/vRemoter/releases">版本与下载</a></p>
+      <p>© 2026 Vincent Studio · <a href="https://vremoter.vincentstudio.org/">官网</a> · <a href="https://github.com/nettee/vRemoter/tree/main">GitHub 源码</a> · <a href="https://github.com/nettee/vRemoter/releases">版本与下载</a></p>
     </div>
   </footer>
   <script src="app.js"></script>

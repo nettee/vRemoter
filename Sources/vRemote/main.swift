@@ -751,6 +751,9 @@ final class AppController: NSObject, NSApplicationDelegate, NSMenuDelegate {
 // MARK: - Entry
 
 #if DEBUG
+if CommandLine.arguments.contains("--audio-routing-self-test") {
+    exit(AudioPipe.runRoutingSelfTest() ? EXIT_SUCCESS : EXIT_FAILURE)
+}
 if CommandLine.arguments.contains("--voice-session-self-test") {
     exit(VoiceSessionSelfTest.run() ? EXIT_SUCCESS : EXIT_FAILURE)
 }

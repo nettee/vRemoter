@@ -377,6 +377,13 @@ final class X6SessionCoordinator {
     /// remote transport only; it never synthesizes a second keyboard event.
     func triggerDownObserved(isSynthetic: Bool) {
         guard !isSynthetic else { return }
+        if !voiceInputToolProvider().observesDoubao {
+            // The physical keyboard event itself reaches Typeless. Stop only
+            // our remote transport; synthesizing another tap would toggle it twice.
+            forceClose()
+            print("[AUDIO-ROUTE] physical keyboard selected computer; remote session cleared")
+            return
+        }
         let snapshot = doubaoState.snapshotNow()
         let shouldOpen: Bool
         switch phase {
@@ -416,6 +423,7 @@ final class X6SessionCoordinator {
 
     func triggerUpObserved(isSynthetic: Bool) {
         guard !isSynthetic else { return }
+        guard voiceInputToolProvider().observesDoubao else { return }
         print(
             "[TRIGGER] UP source=keyboard phase=\(phase.rawValue) " +
             "owner=\(owner.rawValue)"

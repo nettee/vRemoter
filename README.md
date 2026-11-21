@@ -2,13 +2,13 @@
 
 把蓝牙语音遥控器变成 Mac 的语音麦克风与快捷键控制器，方便在 Codex 等工具中进行 Vibe Coding。
 
-本项目 fork 自 [VincentKingHsu/vRemoter](https://github.com/VincentKingHsu/vRemoter)，定制开发位于 [`feat/chromecast-typeless`](https://github.com/nettee/vRemoter/tree/feat/chromecast-typeless)。当前版本：**1.2.3-typeless.6**。改动记录见 [CHANGELOG.md](CHANGELOG.md)。
+本项目 fork 自 [VincentKingHsu/vRemoter](https://github.com/VincentKingHsu/vRemoter)，定制开发维护于本仓库的 `main` 分支。当前版本：**1.2.3-typeless.7**。改动记录见 [CHANGELOG.md](CHANGELOG.md)。
 
 第一次安装或迁移到另一台电脑，请按[新 Mac 安装与 Typeless 接入手册](docs/guides/new-mac-typeless.md)操作。
 
 ## 语音输入
 
-1. 从 [Releases](https://github.com/nettee/vRemoter/releases/tag/v1.2.3-typeless.6) 下载 Apple 芯片版独立 PKG 并安装。它同时安装定制 App 与虚拟麦克风驱动，无需原版 vRemoter 或 BlackHole。
+1. 从 [Releases](https://github.com/nettee/vRemoter/releases/tag/v1.2.3-typeless.7) 下载 Apple 芯片版独立 PKG 并安装。它同时安装定制 App 与虚拟麦克风驱动，无需原版 vRemoter 或 BlackHole。
 2. 通过 macOS 蓝牙设置配对 Chromecast Voice Remote，启动 vRemoter，并授予麦克风、辅助功能、输入监控和蓝牙权限。
 3. 在“按键映射 → 语音工具”选择 **Typeless**，触发键设为 **Fn / Globe**；在 Typeless 中添加同一个点按开始／结束快捷键。可以保留原来的右 Command 快捷键。
 4. 在 Typeless 中选择 **vRemoteDr 2ch** 作为麦克风。
@@ -16,9 +16,9 @@
 
 新安装默认选择 Typeless、Fn 和点按免持。已有用户的选择保留；需要只按住说话时，可在遥控器模式中选择“按住说话”。原有豆包兼容模式仍可选，Typeless 不依赖它的安装或录音状态。
 
-Mac 麦克风开关打开时，电脑音频也会送入虚拟麦克风，包括遥控器未录音的时候，因此原有右 Command 等 Typeless 快捷键仍可用。关闭 Mac 开关可单独验证遥控器收音。系统静音键控制扬声器，不是麦克风静音。
+Typeless 采用按触发源独占收音：遥控器语音键只输出遥控器麦克风；电脑右 Command 或物理 Fn 只输出电脑麦克风，并清理残留遥控器会话。两个音源开关表示允许使用对应音源，不再表示同时混音。所选音源关闭或断流时输出静音，不回退到另一支麦克风。控制台显示“遥控器独占”或“电脑独占”。豆包兼容模式保留旧混音逻辑。系统静音键控制扬声器，不是麦克风静音。
 
-结束录音后，Typeless 将文字放入当前输入框；再按确认键发送。点按控制与音源由 vRemoter 协调；用其他 Typeless 快捷键或其界面结束遥控器会话，可能导致状态不同步。此时先停止 Typeless，再用 vRemoter 的结束录音控制关闭遥控器，重新开始。传输失败会关闭会话并报告错误。
+结束录音后，Typeless 将文字放入当前输入框；再按确认键发送。遥控器点按会话建议仍用同一语音键结束，等出字后再开始下一段。物理右 Command / Fn 会选回电脑并关闭遥控器音频；如果 Typeless 当时正在录音，该按键仍按 Typeless 自己的规则结束当前录音，不会自动另起一段。通过 Typeless 界面或未受监听的其他快捷键结束会话，仍可能造成状态不同步；此时停止 Typeless，并使用 vRemoter 的结束录音控制恢复空闲。传输失败会关闭会话并报告错误。
 
 退出 vRemoter 后，如需继续使用电脑语音输入，请在 Typeless 中将麦克风改回自动检测或电脑麦克风。
 
@@ -53,16 +53,19 @@ Mac 麦克风开关打开时，电脑音频也会送入虚拟麦克风，包括�
 
 2026-11-20 的 `.6` 独立 PKG 已在同机完成实际升级安装；系统 CoreAudio 音频环回通过，安装后的 App/驱动与产物一致，HID/BLE 和原有权限正常。独立驱动源码归档在空目录重建，以及最终 PKG 解包后的驱动检查通过。尚未在另一台全新 Mac 上完成端到端口述测试。
 
+2026-11-21 在另一台 Mac（macOS 26.5.1、Typeless 2.12.0）完成独占收音实现的本机预发布版 PKG 升级验证，权限和 HID/BLE 保留。3 轮遥控器／右 Command 交替口述共 6 段均正常，日志确认音源切换与会话关闭。正式 `.7` 另经构建、签名、驱动环回、PKG/DMG 结构及产物一致性检查，并在本机完成 PKG 实际升级，运行版本、安装后二进制、驱动就绪、权限及 HID/BLE 均确认正常。6 段口述验收来自此前相同收音实现的本机预发布版，不将有限测试视为所有偶现识别问题已消除。
+
 ## 构建与检查
 
 ```sh
+swift run --disable-sandbox vRemote --audio-routing-self-test
 swift run --disable-sandbox vRemote --voice-session-self-test
 zsh Scripts/run-self-tests.sh
 zsh Scripts/build-pkg.sh
 zsh Scripts/test-package.sh
 ```
 
-独立安装包为 `dist/vRemoter-1.2.3-typeless.6-AppleSilicon.pkg`，包括 `dist/build/vRemote.app` 与从仓库内源码构建的 HAL 驱动。构建和目标机器均无需安装原版或 BlackHole。需要 Apple 开发工具；首次 App 构建需要联网获取 SwiftPM 依赖。
+独立安装包为 `dist/vRemoter-1.2.3-typeless.7-AppleSilicon.pkg`，包括 `dist/build/vRemote.app` 与从仓库内源码构建的 HAL 驱动。构建和目标机器均无需安装原版或 BlackHole。需要 Apple 开发工具；首次 App 构建需要联网获取 SwiftPM 依赖。
 
 App 与驱动使用本地 ad-hoc 签名，安装包尚未进行 Developer ID 签名与公证。首次打开可能需要在系统隐私与安全性设置中由用户确认。安装需要管理员授权，并会短暂重启音频服务。
 
@@ -70,7 +73,7 @@ App 与驱动使用本地 ad-hoc 签名，安装包尚未进行 Developer ID 签
 
 ## 源码与历史
 
-- `Sources/vRemote/`：App、BLE/ATVV、混音、状态协调与按键映射。
+- `Sources/vRemote/`：App、BLE/ATVV、音源路由、兼容混音、状态协调与按键映射。
 - `SelfTests/`：协议与配置回归数据。
 - `Scripts/`：构建、打包与测试脚本。
 - `Examples/`：实机使用的遥控器配置示例。

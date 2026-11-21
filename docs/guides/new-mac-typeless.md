@@ -1,6 +1,6 @@
 # 新 Mac 安装手册：Chromecast 遥控器接入 Typeless
 
-更新日期：2026-11-20。适用定制版：`1.2.3-typeless.6`。
+更新日期：2026-11-21。适用定制版：`1.2.3-typeless.7`。
 
 目标：按一下遥控器语音键，松手说话，再按一下结束出字；也能按住说话、松开结束。电脑原有 Typeless 快捷键可以继续使用。
 
@@ -9,7 +9,7 @@
 - 一台 Apple 芯片 Mac（M 系列），拥有管理员验证权限。
 - Chromecast Voice Remote，装好电池。已实测型号为 `18D1:9450`、固件 `26.5`；不需要把 Chromecast 投屏器接到电脑。
 - Typeless 账号和网络连接。
-- 本 fork 的独立安装包：**`vRemoter-1.2.3-typeless.6-AppleSilicon.pkg`**。
+- 本 fork 的独立安装包：**`vRemoter-1.2.3-typeless.7-AppleSilicon.pkg`**。
 
 **只安装这个定制 PKG 即可，它同时安装 App 和虚拟麦克风驱动。不需要原版 vRemoter，不需要单独安装 BlackHole，也不需要 Xcode。** Typeless 需要另外从官网下载。
 
@@ -17,7 +17,7 @@
 
 ### 下载
 
-- [定制版 Release](https://github.com/nettee/vRemoter/releases/tag/v1.2.3-typeless.6)：下载 `.pkg` 和 `SHA256SUMS.txt`。
+- [定制版 Release](https://github.com/nettee/vRemoter/releases/tag/v1.2.3-typeless.7)：下载 `.pkg` 和 `SHA256SUMS.txt`。
 - [Typeless 官方下载](https://www.typeless.com/downloads)：下载 macOS 版。
 
 GitHub 的“Download ZIP”是源码，不是安装包。Release 中的 `vRemoteDriver-source-…tar.gz` 是驱动源码，只用于审阅和自行构建，普通安装不需要解压它。
@@ -36,7 +36,7 @@ GitHub 的“Download ZIP”是源码，不是安装包。Release 中的 `vRemot
 ## 3. 直接安装定制版 PKG
 
 1. 结束当前通话、录音等工作，安装会短暂重启系统音频服务。
-2. 双击 **`vRemoter-1.2.3-typeless.6-AppleSilicon.pkg`**。
+2. 双击 **`vRemoter-1.2.3-typeless.7-AppleSilicon.pkg`**。
 3. 在安装器中继续，选择安装到这台电脑，为所有用户安装。
 4. 完成 macOS 的管理员／触控 ID 验证，等待安装器显示安装成功。
 5. 安装器会尝试启动 App；如未自动打开，从“应用程序”中启动 **vRemote**。
@@ -54,7 +54,7 @@ GitHub 的“Download ZIP”是源码，不是安装包。Release 中的 `vRemot
 
 ## 4. 确认 App 和驱动都就绪
 
-1. 打开 vRemoter 控制台，版本号应显示 **`1.2.3-typeless.6`**。
+1. 打开 vRemoter 控制台，版本号应显示 **`1.2.3-typeless.7`**。
 2. 在控制台检查驱动状态：应显示 **vRemoteDr 2ch 可用**。
 3. 在“系统设置 → 声音 → 输入”确认存在 **`vRemoteDr 2ch`**。只需确认存在，不必改变系统默认麦克风。
 4. 如果 Typeless 安装前就已打开，重新打开它，再选择新出现的虚拟麦克风。
@@ -100,7 +100,7 @@ Google 的[官方说明](https://support.google.com/chromecast/answer/10109990?h
 | 遥控器模式 | **点按免持／按住说话** |
 | 触发键 | **Fn / Globe** |
 
-在“音频”页让 **MacBook 麦克风**和**遥控器麦克风**两个开关都打开。新安装 `.6` 默认使用上述工具、模式和触发键，但仍建议核对。
+在“音频”页让 **MacBook 麦克风**和**遥控器麦克风**两个开关都打开。`.7` 的两个开关表示允许使用各自音源，不会同时混音：遥控器语音键只输出遥控器；物理右 Command / Fn 只输出电脑，并关闭残留遥控器音频。控制台显示当前独占音源。所选音源关闭或断流时不会改用另一音源。新安装 `.7` 默认使用上述工具、模式和触发键，但仍建议核对。
 
 ### Typeless 设置
 
@@ -137,7 +137,11 @@ Google 的[官方说明](https://support.google.com/chromecast/answer/10109990?h
 3. 成功后，再重复一轮约 30–40 秒，确认没有中途结束。
 4. **测试结束后重新打开 MacBook 麦克风开关**，再用电脑原有快捷键说一句，确认恢复双音源日常状态。
 
-本项目之前已在一台 M4 Pro Mac 上通过这三类测试，点按最长一轮约 37 秒。新 Mac 需要重新验收，不能把已有机器的结果视为新机器已通过。
+之前的双音源版本在 M4 Pro Mac 上通过了这些测试，点按最长约 37 秒。独占收音实现的本机预发布版又在 macOS 26.5.1 / Typeless 2.12.0 上完成 3 轮遥控器／右 Command 交替口述，共 6 段正常。新 Mac 仍需重新验收；这些有限结果不能替代新机器测试。
+
+### D. 遥控器与电脑交替使用
+
+恢复两个音源开关后，连续做 3 轮：用遥控器语音键开始／结束一句话，等出字后把遥控器放远，用电脑右 Command 开始／结束另一句话。确认每段文字正常、控制台音源切换正确。先结束当前录音再开始下一段；电脑键盘接管不会自动结束旧录音后另起一段。
 
 ## 9. 可选：配置 Codex 日常按键
 
@@ -167,7 +171,7 @@ Google 的[官方说明](https://support.google.com/chromecast/answer/10109990?h
 | Typeless 启动，但录不到声音 | Typeless 是否选了虚拟麦克风；vRemoter 是否运行；遥控器音源开关是否打开；BLE 是否就绪 |
 | 离电脑远一点就不出字 | 暂时关闭 Mac 音源做独立收音测试，确认不是一直在录电脑麦克风 |
 | 遥控器按键正常，但语音不行 | 普通 HID 和 BLE 音频是两条链路；检查 BLE 状态、蓝牙权限，重开 vRemoter 后再试 |
-| 电脑原来的语音快捷键没声音 | 打开 MacBook 麦克风混音；如果 vRemoter 已退出，把 Typeless 麦克风改回自动检测／电脑麦克风 |
+| 电脑原来的语音快捷键没声音 | 打开 MacBook 麦克风音源；如果 vRemoter 已退出，把 Typeless 麦克风改回自动检测／电脑麦克风 |
 | 录音开始／结束状态不同步 | 停止 Typeless 当前录音；用 vRemoter“结束录音”关闭遥控器会话；必要时退出重开两者，再从空闲状态开始 |
 | 普通按键启用映射后不工作 | 检查输入监控权限；重开 vRemoter；查看日志中是否有 `[CAST-HID] manager open failed`。本 fork 未实现该权限失败的通用修复，可先关闭映射恢复原行为 |
 | 新 Mac 搜不到遥控器 | 先断开旧 Mac 连接；重新按住返回＋Home进入配对；检查电池与距离 |
@@ -208,13 +212,14 @@ xcode-select --install
 ```sh
 git clone https://github.com/nettee/vRemoter.git
 cd vRemoter
-git checkout v1.2.3-typeless.6
+git checkout v1.2.3-typeless.7
+swift run --disable-sandbox vRemote --audio-routing-self-test
 swift run --disable-sandbox vRemote --voice-session-self-test
 zsh Scripts/run-self-tests.sh
 zsh Scripts/build-pkg.sh
 zsh Scripts/test-package.sh
 ```
 
-产物为 `dist/vRemoter-1.2.3-typeless.6-AppleSilicon.pkg`。`build-pkg.sh` 会同时构建 App、源码驱动，检查驱动音频环回，然后封装为一个安装包。安装这个产物即可，无需另装旧版。
+产物为 `dist/vRemoter-1.2.3-typeless.7-AppleSilicon.pkg`。`build-pkg.sh` 会同时构建 App、源码驱动，检查驱动音频环回，然后封装为一个安装包。安装这个产物即可，无需另装旧版。
 
 驱动 GPL 源码、修改说明和构建方法见 [Driver/README.md](../../Driver/README.md)。

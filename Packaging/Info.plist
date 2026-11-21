@@ -19,9 +19,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>1.2.3-typeless.6</string>
+    <string>1.2.3-typeless.7</string>
     <key>CFBundleVersion</key>
-    <string>129</string>
+    <string>131</string>
     <key>VRemoterBetaSuffix</key>
     <string></string>
     <key>LSMinimumSystemVersion</key>
@@ -41,7 +41,7 @@
     <key>NSBluetoothPeripheralUsageDescription</key>
     <string>连接蓝牙语音遥控器并接收语音音频。</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>同时使用蓝牙遥控器和 MacBook 麦克风进行语音输入。</string>
+    <string>根据语音触发键使用蓝牙遥控器或 MacBook 麦克风进行语音输入。</string>
     <key>NSInputMonitoringUsageDescription</key>
     <string>识别蓝牙遥控器语音键并阻止原生搜索动作干扰语音输入。</string>
     <key>NSHighResolutionCapable</key>

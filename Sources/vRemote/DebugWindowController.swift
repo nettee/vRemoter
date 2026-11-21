@@ -242,6 +242,7 @@ private final class ConsoleViewModel: ObservableObject {
     @Published var hidConnected = false
     @Published var bleConnected = false
     @Published var remoteStreaming = false
+    @Published var remoteRouteActive = false
     @Published var macInputEnabled = true
     @Published var remoteInputEnabled = true
     @Published var doubaoIsRecording = false
@@ -483,6 +484,7 @@ final class DebugWindowController: NSWindowController, NSWindowDelegate {
             self.model.hidConnected = hidConnected
             self.model.bleConnected = bleConnected
             self.model.remoteStreaming = remoteStreaming
+            self.model.remoteRouteActive = AudioPipe.shared.isRemoteRouteActive
             self.model.macInputEnabled = macInputEnabled
             self.model.remoteInputEnabled = remoteInputEnabled
             self.model.doubaoIsRecording = doubaoIsRecording
@@ -1332,8 +1334,8 @@ private struct InputChannelView: View {
                     .fill(enabled ? ConsoleTheme.green : ConsoleTheme.tertiary)
                     .frame(width: 10, height: 10)
                 Text(enabled
-                    ? L10n.text("有声音", "Active")
-                    : L10n.text("不参与混合", "Muted"))
+                    ? L10n.text("已启用", "Enabled")
+                    : L10n.text("已关闭", "Muted"))
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(enabled ? ConsoleTheme.secondary : ConsoleTheme.tertiary)
                 Spacer()
@@ -1394,8 +1396,8 @@ private struct InputChannelView: View {
             .padding(.top, 31)
             HStack(spacing: 4) {
                 Text(enabled
-                    ? L10n.text("参与混合", "In mix")
-                    : L10n.text("不参与混合", "Not in mix"))
+                    ? L10n.text("音源可用", "Source enabled")
+                    : L10n.text("音源关闭", "Source disabled"))
                 Spacer()
                 if purchaseLink {
                     Button(L10n.text("购买遥控器 ↗", "Buy remote ↗")) {
@@ -1424,9 +1426,21 @@ private struct InputChannelView: View {
 private struct OutputChannelView: View {
     @ObservedObject var model: ConsoleViewModel
 
+    private var typelessSource: String {
+        model.remoteRouteActive
+            ? L10n.text("遥控器独占", "Remote only")
+            : L10n.text("电脑独占", "Computer only")
+    }
+
+    private var selectedInputEnabled: Bool {
+        model.remoteRouteActive ? model.remoteInputEnabled : model.macInputEnabled
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(L10n.text("混合输出", "Mixed Output"))
+            Text(model.voiceInputTool == .typeless
+                 ? L10n.text("独占输出", "Exclusive Output")
+                 : L10n.text("混合输出", "Mixed Output"))
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(ConsoleTheme.text)
             Text(model.voiceInputTool == .typeless ? "Typeless" : L10n.text("发送给豆包", "Sent to Doubao"))
@@ -1444,13 +1458,17 @@ private struct OutputChannelView: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(outputError ? ConsoleTheme.red : ConsoleTheme.amber)
                 Spacer()
-                Text(outputError ? "−∞" : "−9 dB")
+                Text(outputError ? "−∞" : model.voiceInputTool == .typeless ? typelessSource : "")
                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                     .foregroundStyle(ConsoleTheme.secondary)
             }
             .padding(.top, 15)
             MeterView(
-                db: outputError ? -120 : max(model.macLevelDB, model.remoteLevelDB),
+                db: outputError ? -120 : model.voiceInputTool == .typeless
+                    ? (selectedInputEnabled
+                        ? (model.remoteRouteActive ? model.remoteLevelDB : model.macLevelDB)
+                        : -120)
+                    : max(model.macLevelDB, model.remoteLevelDB),
                 color: ConsoleTheme.amber,
                 count: 14
             )
@@ -1466,7 +1484,9 @@ private struct OutputChannelView: View {
             .padding(.top, 6)
             HStack(spacing: 8) {
                 Circle().fill(ConsoleTheme.amber).frame(width: 10, height: 10)
-                Text(L10n.text("两路已合并", "Inputs mixed"))
+                Text(model.voiceInputTool == .typeless
+                     ? (selectedInputEnabled ? typelessSource : L10n.text("所选音源已关闭", "Selected input muted"))
+                     : L10n.text("两路已合并", "Inputs mixed"))
                     .font(.system(
                         size: AppLanguage.selected.usesEnglish ? 11 : 14,
                         weight: .semibold
